@@ -1,6 +1,5 @@
 import { Suspense, FC, useEffect } from "react";
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from "@mui/material/Box";
+import { Box, CircularProgress } from "@mui/material";
 
 interface PageWrapperProps {
     title: string;
@@ -13,9 +12,9 @@ export const PageWrapper: FC<PageWrapperProps> = ({title, component: Component})
     return (
         <Suspense 
             fallback={
-                <Box sx={{ display: 'flex', alignItems: "center", justifyContent: "center" }}>
-                    <CircularProgress />
-                </Box>
+                <Box sx={{ display: 'flex', alignItems: "center", justifyContent: "center", height: "100%" }}>
+                    <CircularProgress size="4rem" />
+                </Box>        
             }>
             <Component />
         </Suspense>
