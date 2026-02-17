@@ -12,7 +12,7 @@ export const PageWrapper: FC<PageWrapperProps> = ({title, component: Component})
     return (
         <Suspense 
             fallback={
-                <Box sx={{ display: 'flex', alignItems: "center", justifyContent: "center", height: "100%" }}>
+                <Box sx={{ display: 'flex', alignItems: "center", justifyContent: "center", height: "100vh" }}>
                     <CircularProgress size="4rem" />
                 </Box>        
             }>

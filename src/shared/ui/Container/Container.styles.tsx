@@ -8,4 +8,5 @@ export const Container = styled.div`
     border-radius: 16px;
     border: 1px solid rgb(25, 118, 210);
     width: 400px;
+    background-color: white;
 `
