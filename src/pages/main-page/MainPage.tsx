@@ -2,9 +2,10 @@ import { Button, Container, IconButton, InputBase, Paper } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import bgImage from "../../shared/assets/imgs/bgImage.jpg";
 import { useState } from "react";
+import { PATHS } from "../../shared/consts";
 
 export default function MainPage () {
-  const [search, setSearch] = useState<string>("");
+  const [search, setSearch] = useState("");
 
   return (
     <Container sx={{
@@ -44,11 +45,11 @@ export default function MainPage () {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <IconButton type="button" sx={{ p: '10px' }} href={`/application-tracking/${search}`}>
+        <IconButton type="button" sx={{ p: '10px' }} href={`/${PATHS.APPLICATION_TRACKING}/${search}`}>
           <SearchIcon />
         </IconButton>
       </Paper>
-      <Button variant="contained" href="new-application" fullWidth sx={{width: 400}}>
+      <Button variant="contained" href={PATHS.NEW_APPLICATION} fullWidth sx={{width: 400}}>
         Создать заявку
       </Button>
     </Container>

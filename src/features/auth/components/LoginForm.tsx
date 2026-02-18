@@ -4,12 +4,12 @@ import { useState } from "react";
 import bgImage from "../../../shared/assets/imgs/bgImage.jpg";
 import { useNavigate } from "react-router";
 import authService from "../services";
-import { STORAGE_KEYS } from "../../../shared/consts";
+import { PATHS, STORAGE_KEYS } from "../../../shared/consts";
 import HomeIcon from '@mui/icons-material/Home';
 
 export default function LoginForm () {
 
-    let navigate = useNavigate();
+    const navigate = useNavigate();
 
     const [isLoading, setIsLoading] = useState(false);
     const [login, setLogin] = useState("");
@@ -31,7 +31,7 @@ export default function LoginForm () {
                 (data) => {
                     localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
                     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.data));
-                    navigate("/");                
+                    navigate(`/${PATHS.TOOLPAD}/`);                
             })
             .catch(
                 (error) => {

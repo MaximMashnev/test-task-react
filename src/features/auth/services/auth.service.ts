@@ -1,5 +1,5 @@
 import config from "../../../shared/configs/config.json";
-import { User as UserEntity } from "../../../entities/User";
+import { UserEntity } from "../../../entities/User";
 import { httpService } from "../../../shared/api/services/http.service";
 
 const authMe = config.api.endPoints.auth_me;

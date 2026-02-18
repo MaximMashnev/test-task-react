@@ -1,7 +1,7 @@
 import {Typography, Toolbar, Button, Box, AppBar} from "@mui/material";
 import { Link, Outlet } from "react-router-dom";
 import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { PATHS } from "../../shared/consts";
 
 export default function MainLayout() {
     return(
@@ -12,7 +12,8 @@ export default function MainLayout() {
               <Typography variant="h6" component="div" sx={{ flexGrow: 1}}>
                 <Link to={"/"} style={{textDecoration: "none", color: "white"}}>СтроительнаяКомпания</Link>
               </Typography>
-              <Button color="inherit" endIcon={<LoginIcon />} href="login">
+              {/* TODO Если пользователь авторизован, то отображать кнопку на панель инструментов и кнопку "Выйти" */}
+              <Button color="inherit" endIcon={<LoginIcon />} href={PATHS.LOGIN}>
                 Авторизоваться
               </Button >
             </Toolbar>

@@ -1,6 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import { PageWrapper } from "../layouts/PageWrapper";
+import { RequireAuth } from "../../features/auth/components/RequireAuth";
 import { lazy } from "react";
+import { PATHS } from "../../shared/consts";
 
 const MainLayout = lazy(() => import("../layouts/MainLayout"));
 const ToolpadLayout = lazy(() => import("../layouts/ToolpadLayout"));
@@ -23,35 +25,35 @@ export const router = createBrowserRouter([
                 element: <PageWrapper title="Главная страница" component={MainPage} />
             },
             {
-                path: "new-application",
+                path: PATHS.NEW_APPLICATION,
                 element: <PageWrapper title="Создание заявки" component={ApplicationCreatingPage} />
             },
             {
-                path: "application-tracking/:id",
+                path: `${PATHS.APPLICATION_TRACKING}/:id`,
                 element: <PageWrapper title="Отслеживание заявки" component={ApplicationTrackingPage} />
             }
         ]
     },
     {
-        path: "tp",
-        element: <ToolpadLayout />,
+        path: PATHS.TOOLPAD,
+        element: <RequireAuth component={ToolpadLayout}/>,
         children: [
             {
-                path: "applications",
-                element: <PageWrapper title="Заявки" component={ApplicationPage} />
-            },
-                {
-                path: "buildings",
+                path: PATHS.BUILDINGS,
                 element: <PageWrapper title="Объекты" component={BuildingPage} />
             },
-                {
-                path: "dashboard",
+            {
+                path: PATHS.APPLICATIONS,
+                element: <PageWrapper title="Заявки" component={ApplicationPage} />
+            },
+            {
+                path: PATHS.DASHBOARD,
                 element: <PageWrapper title="Аналитика" component={DashboardPage} />
             },
         ]
     },
     {
-        path: "login",
+        path: PATHS.LOGIN,
         element: <PageWrapper title="Авторизация" component={LoginPage} />
     },
     {
