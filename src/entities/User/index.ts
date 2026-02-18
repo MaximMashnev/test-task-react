@@ -1,1 +1,1 @@
-export type { User } from "./model/user"
+export type { UserEntity } from "./model/types"
