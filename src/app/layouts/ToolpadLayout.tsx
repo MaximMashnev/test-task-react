@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet} from "react-router-dom";
 import * as React from 'react';
 import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles';
 import MuiDrawer from '@mui/material/Drawer';
@@ -23,6 +23,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import MailIcon from '@mui/icons-material/Mail';
 import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import authService from "../../features/auth/services";
+import LogoutIcon from '@mui/icons-material/Logout';
+import HomeIcon from '@mui/icons-material/Home';
+import { PATHS } from "../../shared/consts";
 
 const drawerWidth = 240;
 
@@ -114,23 +118,43 @@ interface ItemPanel {
     href: string;
 };
 
+interface secItemPanel extends ItemPanel {
+  action: () => void;
+}
+
 const Menu: ItemPanel[] = [
     {
         label: "Объекты",
         icon: <MapsHomeWorkIcon/>,
-        href: "buildings"
+        href: PATHS.BUILDINGS
     },
     {
         label: "Заявки",
         icon: <MailIcon/>,
-        href: "applications"
+        href: PATHS.APPLICATIONS
     },
         {
         label: "Аналитика",
         icon: <AnalyticsIcon/>,
-        href: "dashboard"
+        href: PATHS.DASHBOARD
     }
 ];
+
+const secMenu: secItemPanel[] = [
+    {
+        label: "На главную",
+        icon: <HomeIcon/>,
+        href: PATHS.MAIN,
+        action: () => {}
+    },
+    {
+        label: "Выйти",
+        icon: <LogoutIcon/>,
+        href: `../${PATHS.LOGIN}`,
+        action: () => authService.logout()
+    }
+];
+
 
 export default function ToolpadLayout() {
   const theme = useTheme();
@@ -201,10 +225,34 @@ export default function ToolpadLayout() {
               </ListItemButton>
             </ListItem>
           ))}
+          <Divider />
+          {Object.values(secMenu).map((item, index) => (
+            <ListItem key="logout" disablePadding sx={{ display: 'block' }}>
+              <ListItemButton 
+                sx={[{ minHeight: 48,px: 2.5 },
+                  open ? { justifyContent: 'initial' } : { justifyContent: 'center' },
+                ]}
+                href={item.href}
+                onClick={item.action}
+              >
+                <ListItemIcon
+                  sx={[{minWidth: 0,justifyContent: 'center'},
+                    open ? { mr: 3 } : { mr: 'auto' },
+                  ]}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  sx={[ open ? { opacity: 1 } : { opacity: 0 } ]}
+                />
+              </ListItemButton>
+            </ListItem>            
+          ))}
         </List>
         <Divider />
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, padding: "5px" }}>
         <DrawerHeader />
         <Outlet />
       </Box>
