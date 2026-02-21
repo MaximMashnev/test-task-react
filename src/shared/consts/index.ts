@@ -10,5 +10,6 @@ export const PATHS = {
     BUILDINGS: "buildings",
     DASHBOARD: "dashboard",
     LOGIN: "login",
-    TOOLPAD: "tp"
+    TOOLPAD: "tp/",
+    MAIN: "/"
 } as const;

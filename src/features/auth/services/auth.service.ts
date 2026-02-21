@@ -24,6 +24,10 @@ const authService = {
     async authMe () {
         const { data } = await httpService.get<AuthMe>(authMe);
         return data;
+    },
+
+    logout () {
+        localStorage.clear();
     }
 }
 
