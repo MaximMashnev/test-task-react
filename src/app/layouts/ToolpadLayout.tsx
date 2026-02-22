@@ -227,7 +227,7 @@ export default function ToolpadLayout() {
           ))}
           <Divider />
           {Object.values(secMenu).map((item, index) => (
-            <ListItem key="logout" disablePadding sx={{ display: 'block' }}>
+            <ListItem key={index} disablePadding sx={{ display: 'block' }}>
               <ListItemButton 
                 sx={[{ minHeight: 48,px: 2.5 },
                   open ? { justifyContent: 'initial' } : { justifyContent: 'center' },

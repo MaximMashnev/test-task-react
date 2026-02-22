@@ -12,9 +12,9 @@ import { BuildingEntity } from '../../../entities/Buildings';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { NewBuilding } from '../../../entities/Buildings/model/types';
-import BuildingService from '../../../entities/Buildings/services/buildings.service';
+import buildingsStore from '../../../entities/Buildings/model/store';
 
 interface BuildingFormDialogProps {
     open: boolean;
@@ -26,40 +26,38 @@ const BuildingFormDialog: FC<BuildingFormDialogProps> = ({open, data, onClose}) 
 
     const [name, setName] = useState("");
     const [address, setAddress] = useState("");
-    // TODO исправить вывод даты 
-    const [dateRegistration, setDateRegistration] = useState<Dayjs>(dayjs(new Date()));
+    const [dateRegistration, setDateRegistration] = useState(new Date());
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        if (data) {
+        if (open && data) {
             setName(data.name);
             setAddress(data.address);
-            setDateRegistration(dayjs(data.dateRegistration));
-        } else {
+            setDateRegistration(data.dateRegistration);
+        }
+        else {
             setName("");
             setAddress("");
-            setDateRegistration(dayjs(new Date()));
+            setDateRegistration(new Date());
         }
-    }, [data]);
-
-    useEffect(() => {
-        if (!open) {
-            setName("");
-            setAddress("");
-            setDateRegistration(dayjs(new Date()));
-        }
-    }, [open]);
+    }, [open, data]);
 
     const handleSubmit = (e: React.SubmitEvent) => {
         e.preventDefault();
         setIsLoading(true);
+
+        if (!dateRegistration) {
+            window.alert("Выберите дату регистрации.");
+            setIsLoading(false);
+            return;
+        }
+
         if (data) {
             editBuilding();
         }
         else {
             addBuilding();
         }
-        setIsLoading(false);
     }
 
     const handleOnClose = () => {
@@ -74,13 +72,14 @@ const BuildingFormDialog: FC<BuildingFormDialogProps> = ({open, data, onClose}) 
             dateRegistration: dateRegistration
         }
         try {
-            await BuildingService.addBuilding(building);
+            await buildingsStore.editBuilding(building);
             window.alert("Информация об объекте была обновлена.")
         }
         catch (error) {
             window.alert("Ошибка при обновлении информации объекта.")
         }
         finally {
+            setIsLoading(false);
             handleOnClose();
         }
     }
@@ -93,13 +92,14 @@ const BuildingFormDialog: FC<BuildingFormDialogProps> = ({open, data, onClose}) 
             numberApplications: 0
         }
         try {
-            await BuildingService.addBuilding(building);
+            await buildingsStore.addBuilding(building);
             window.alert("Новый объект был добавлен.")
         }
         catch (error) {
             window.alert("Ошибка при добавлении объекта.")
         }
         finally {
+            setIsLoading(false);
             handleOnClose();
         }
     }
@@ -135,8 +135,8 @@ const BuildingFormDialog: FC<BuildingFormDialogProps> = ({open, data, onClose}) 
             <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                 label="Дата регистрации"
-                value={dateRegistration}
-                onChange={newDate => setDateRegistration(dayjs(newDate))}
+                value={dayjs(dateRegistration)}
+                onChange={newDate => setDateRegistration(dayjs(newDate).isValid() ? dayjs(newDate).toDate() : new Date())}
                 disabled={isLoading}
                 />
             </LocalizationProvider>

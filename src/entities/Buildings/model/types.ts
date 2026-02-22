@@ -1,10 +1,8 @@
-import { Dayjs } from "dayjs";
-
 export interface BuildingEntity {
     id: number;
     name: string;
     address: string;
-    dateRegistration: Dayjs;
+    dateRegistration: Date;
     numberApplications: number;
 }
 
