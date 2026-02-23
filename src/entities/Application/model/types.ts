@@ -16,3 +16,16 @@ export interface ApplicationEntity {
     status: ApplicationStatus;
     building: BuildingEntity;
 }
+
+export type NewApplication = Omit<ApplicationEntity, "id">
+
+export interface ApplicationCategory {
+    id: number;
+    name: string;
+    score: number;
+}
+
+export interface LevelCriticality {
+    level: string;
+    score: number;
+}
