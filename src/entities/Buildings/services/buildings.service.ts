@@ -2,46 +2,55 @@ import { httpService } from "../../../shared/api/services/http.service"
 import config from "../../../shared/configs/config.json"
 import { BuildingEntity, NewBuilding } from "../model/types";
 import { BuildingsDTO } from "./dto";
-import { GridSortItem } from "@mui/x-data-grid/models/gridSortModel";
-import { Pagination } from "../../../shared/api/services/types";
+import buildingsStore from "../model/store";
+import dayjs from "dayjs";
 
 const BuildingEndpoind = config.api.endPoints.buildings;
 
 const BuildingService = {
-    async getBuildings (pagination: Pagination, sort: GridSortItem) {
-        const sortDirection = () => {
-            switch (sort.sort) {
-                case "asc":
-                    return "+";
-                case "desc":
-                    return "-";
-                default:
-                    return "";
-            }
+    setDate(building: BuildingEntity | NewBuilding) {
+        return {
+            ...building,
+            dateRegistration: dayjs(building.dateRegistration.setUTCHours(0, 0, 0, 0)).toISOString()
         }
-        const sortField = sort? sort.field : "id";
-        const sortDir = sort ? sortDirection() : "";
+    },
+
+    async getBuildings () {
+        const sortField = buildingsStore.sort ? buildingsStore.sort.field : "id";
+        const sortDir = buildingsStore.sort ? buildingsStore.sort.sort === "desc" ? "-" : "" : "";
+        const filter = () => {
+            const filterItems = buildingsStore.filter?.items[0];
+            if (filterItems?.field) {
+                const filterOperator = filterItems.operator === 'is' ? "=" : filterItems.operator;
+                const filterValue = typeof filterItems.value === "string" ? filterItems.value : dayjs(filterItems.value).toISOString()
+                return `${filterItems.field}${filterOperator}${filterValue}&`;
+            }
+            return "";
+        }
         const { data } = await httpService.get<BuildingsDTO>(
-            `${BuildingEndpoind}`+
-            `?page=${pagination.page}`+
-            `&limit=${pagination.pageSize}`+
+            `${BuildingEndpoind}?`+
+            filter() +
+            `page=${buildingsStore.pagination.page + 1}`+
+            `&limit=${buildingsStore.pagination.pageSize}`+
             `&sortBy=${sortDir}${sortField}`
             );
         return data;
     },
 
     async addBuilding (newBuilding: NewBuilding) {
-        const { data } = await httpService.post<NewBuilding>(BuildingEndpoind, newBuilding);
+        const building = this.setDate(newBuilding);
+        const { data } = await httpService.post<NewBuilding>(BuildingEndpoind, building);
         return data;
     },
 
-    async editBuilding (building: BuildingEntity) {
-        const { data } = await httpService.patch<BuildingEntity>(`${BuildingEndpoind}/${building.id}`, building);
+    async editBuilding (editBuilding: BuildingEntity) {
+        const building = this.setDate(editBuilding);
+        const { data } = await httpService.patch<BuildingEntity>(`${BuildingEndpoind}/${editBuilding.id}`, building);
         return data;
     },
 
-    async deleteBuilding (building: BuildingEntity) {
-        const { data } = await httpService.delete<BuildingEntity>(`${BuildingEndpoind}/${building.id}`);
+    async deleteBuilding (deleteBuilding: BuildingEntity) {
+        const { data } = await httpService.delete<BuildingEntity>(`${BuildingEndpoind}/${deleteBuilding.id}`);
         return data;
     }
 }

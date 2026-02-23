@@ -1,21 +1,21 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { BuildingEntity, NewBuilding } from "./types";
 import BuildingService from "../services/buildings.service";
-import { Meta, Pagination } from "../../../shared/api/services/types";
+import { Meta} from "../../../shared/api/services/types";
 import { GridSortItem } from "@mui/x-data-grid/models/gridSortModel";
+import { GridFilterModel, GridPaginationModel } from "@mui/x-data-grid";
 
 function createBuildingsStore() {
     return makeAutoObservable({
         buildings: [] as BuildingEntity[],
-        pagination: {} as Pagination,
+        pagination: {} as GridPaginationModel,
         meta: {} as Meta,
         sort: {} as GridSortItem,
-
-        // https://cd7336442031824d.mokky.dev/buildings?page=0&limit=0&sortBy=+id
+        filter: {} as GridFilterModel | null,
 
         async getBuildings() {
             try {
-                const data = await BuildingService.getBuildings(this.pagination, this.sort);
+                const data = await BuildingService.getBuildings();
                 runInAction(() => {
                     this.buildings = data.items;
                     this.meta = data.meta;
@@ -53,9 +53,7 @@ function createBuildingsStore() {
         async deleteBuilding(building: BuildingEntity) {
             try {
                 await BuildingService.deleteBuilding(building);
-                runInAction(() => {
-                    this.buildings = this.buildings.filter(item => item.id !== building.id);
-                })
+                await this.getBuildings();
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка удаления";

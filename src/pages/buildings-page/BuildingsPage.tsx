@@ -1,9 +1,11 @@
 import { 
   DataGrid, 
+  getGridDateOperators, 
   GridActionsCell, 
   GridActionsCellItem, 
-  GridColDef, 
-  GridPaginationMeta, 
+  GridColDef,
+  GridFilterInputValue, 
+  GridFilterModel,
   GridPaginationModel, 
   GridRenderCellParams, 
   GridSortModel, 
@@ -21,11 +23,24 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { BuildingEntity } from '../../entities/Buildings';
-import dayjs from 'dayjs';
-import { Meta, Pagination } from '../../shared/api/services/types';
 import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
 
 const BuildingsPage = observer(() => {
+
+  const customFilter = [
+    {
+      label: 'Равно',
+      value: "=",
+      InputComponent: GridFilterInputValue,
+      getApplyFilterFn: () => {return null},
+    },
+    {
+      label: 'Содержит',
+      value: '=*',
+      InputComponent: GridFilterInputValue,
+      getApplyFilterFn: () => {return null},
+    },
+  ];
 
   const columns: GridColDef<BuildingEntity>[] = [
     { 
@@ -38,19 +53,25 @@ const BuildingsPage = observer(() => {
       field: 'name', 
       headerName: 'Название', 
       type: 'longText',
-      flex: 1
+      flex: 1,
+      filterOperators: customFilter
     },
     { 
       field: 'address', 
       headerName: 'Адрес',
       type: 'longText',
-      flex: 1
+      flex: 1,
+      filterOperators: customFilter
     },
     {
       field: 'dateRegistration',
       headerName: 'Дата регистрации',
       flex: 1,
-      renderCell: (params: GridRenderCellParams<BuildingEntity>) => {return dayjs(params.value).format('DD.MM.YYYY')}
+      type: "date",
+      valueGetter: (value) => {return new Date(value)},
+      filterOperators: getGridDateOperators().filter(
+        (operator) => operator.value === 'is'
+      ),
     },
     {
       field: 'numberApplications',
@@ -104,14 +125,16 @@ const BuildingsPage = observer(() => {
 
   const [openDialog, setOpenDialog] = useState(false);
   const [editData, setEditData] = useState<BuildingEntity | null>(null);
-  const [paginationModel, setPaginationModel] = useState<Pagination>({page: 0, pageSize: 5});
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({page: 0, pageSize: 5});
   const [sortModel, setSortModel] = useState<GridSortItem>({field: "id", sort: "asc"});
+  const [filterModel, setFilterModel] = useState<GridFilterModel | null>(null);
 
   useEffect(() => {
+    buildingsStore.filter = filterModel;
     buildingsStore.pagination = paginationModel;
     buildingsStore.sort = sortModel;
     buildingsStore.getBuildings();
-  }, [paginationModel, sortModel])
+  }, [paginationModel, sortModel, filterModel])
 
   const handleOpenDialog = () => {
     setEditData(null);
@@ -146,7 +169,8 @@ const BuildingsPage = observer(() => {
             rowCount={buildingsStore.meta.total_items ?? 0}
             sortingMode="server"
             onSortModelChange={([model]: GridSortModel) => setSortModel(model)}
-            // TODO сделать фильтрацию по названию, адресу, дате регистрации
+            filterMode='server'
+            onFilterModelChange={(model: GridFilterModel) => setFilterModel(model)}
             sx={{ border: 0 }}
             showToolbar
             slots={{toolbar: CustomToolbar}}
