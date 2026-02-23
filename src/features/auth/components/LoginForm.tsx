@@ -31,12 +31,12 @@ export default function LoginForm () {
                 (data) => {
                     localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
                     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.data));
-                    navigate(`/${PATHS.TOOLPAD}/`);                
+                    navigate(`../${PATHS.TOOLPAD}`);
             })
             .catch(
                 (error) => {
                     const message = error.response.data.message ?? "Ошибка авторизации";
-                    setError(message);                
+                    setError(message);
             })
             .finally(
                 () => {

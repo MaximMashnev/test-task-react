@@ -15,6 +15,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { NewBuilding } from '../../../entities/Buildings/model/types';
 import buildingsStore from '../../../entities/Buildings/model/store';
+import { DATE_FORMAT } from '../../../shared/consts';
 
 interface BuildingFormDialogProps {
     open: boolean;
@@ -137,6 +138,7 @@ const BuildingFormDialog: FC<BuildingFormDialogProps> = ({open, data, onClose}) 
                 label="Дата регистрации"
                 value={dayjs(dateRegistration)}
                 onChange={newDate => setDateRegistration(dayjs(newDate).isValid() ? dayjs(newDate).toDate() : new Date())}
+                format={DATE_FORMAT}
                 disabled={isLoading}
                 />
             </LocalizationProvider>
