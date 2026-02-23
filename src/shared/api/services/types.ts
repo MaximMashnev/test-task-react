@@ -1,8 +1,3 @@
-export interface Pagination {
-  page: number;
-  pageSize: number;
-}
-
 export interface Meta {
     current_page: number;
     per_page: number;

@@ -17,11 +17,11 @@ const LoginPage = lazy(() => import("../../pages/login-page"));
 
 export const router = createBrowserRouter([
     {
-        path: "/",
+        path: PATHS.MAIN,
         element: <MainLayout />,
         children: [
             {
-                path: "/",
+                path: PATHS.MAIN,
                 element: <PageWrapper title="Главная страница" component={MainPage} />
             },
             {
