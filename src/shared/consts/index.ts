@@ -15,3 +15,6 @@ export const PATHS = {
 } as const;
 
 export const DATE_FORMAT = 'DD.MM.YYYY';
+
+export const MAX_FILES = 5;
+export const MAX_SIZE_MB = 10;

@@ -116,7 +116,7 @@ const BuildingsPage = observer(() => {
         <Button variant="text" startIcon={<AddIcon />} onClick={handleOpenDialog}>
           Новый объект
         </Button >
-        <Button variant="text" startIcon={<RefreshIcon />} onClick={() => buildingsStore.getBuildings()}>
+        <Button variant="text" startIcon={<RefreshIcon />} onClick={() => buildingsStore.getBuildingsForTable()}>
           Обновить
         </Button >
       </GridToolbarContainer>
@@ -133,7 +133,7 @@ const BuildingsPage = observer(() => {
     buildingsStore.filter = filterModel;
     buildingsStore.pagination = paginationModel;
     buildingsStore.sort = sortModel;
-    buildingsStore.getBuildings();
+    buildingsStore.getBuildingsForTable();
   }, [paginationModel, sortModel, filterModel])
 
   const handleOpenDialog = () => {

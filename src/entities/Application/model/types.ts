@@ -1,11 +1,8 @@
 import { BuildingEntity } from "../../Buildings";
 
-export enum ApplicationStatus {
-    new = "new",
-    inProgress = "in progress",
-    completed = "completed",
-    rejected = "rejected"
-}
+export type ApplicationStatus = "новый" | "в работе" | "выполнено" | "отклонено";
+
+export type BuildingID = Pick<BuildingEntity, "id">
 
 export interface ApplicationEntity {
     id: number;
@@ -13,8 +10,14 @@ export interface ApplicationEntity {
     description: string;
     email: string;
     dateSubmission: Date;
+    dateInProgress?: Date;
+    dateResult?: Date;
     status: ApplicationStatus;
-    building: BuildingEntity;
+    priority: number;
+    building_id: number;
+    upload_id: number[];
+    user_id?: number;
+    reason?: string;
 }
 
 export type NewApplication = Omit<ApplicationEntity, "id">
