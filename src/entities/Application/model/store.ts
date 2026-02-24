@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import { ApplicationCategory, ApplicationEntity, NewApplication} from "./types";
+import { ApplicationCategory, ApplicationEntity, NewApplication } from "./types";
 import { Meta} from "../../../shared/api/services/types";
 import { GridSortItem } from "@mui/x-data-grid/models/gridSortModel";
 import { GridFilterModel, GridPaginationModel } from "@mui/x-data-grid";
@@ -13,6 +13,7 @@ function createApplicationsStore() {
         sort: {} as GridSortItem,
         filter: {} as GridFilterModel | null,
         categories: [] as ApplicationCategory[],
+        files: [] as unknown as FileList,
 
         async getApplications() {
             try {
@@ -21,11 +22,22 @@ function createApplicationsStore() {
                     this.applications = data.items;
                     this.meta = data.meta;
                 });
-                console.log('Данные:', data);
             } 
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка загрузки";
                 console.log(getError);
+            }
+        },
+
+        async getApplication(id: number) {
+            try {
+                const data = await ApplicationService.getApplication(id);
+                return data;
+            } 
+            catch (error) {
+                const getError = error instanceof Error ? error.message : "Ошибка загрузки";
+                console.log(getError);
+                return undefined;
             }
         },
 
@@ -35,7 +47,6 @@ function createApplicationsStore() {
                 runInAction(() => {
                     this.categories = data;
                 });
-                console.log('Категории:', data);
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка при получении категорий";
@@ -45,8 +56,8 @@ function createApplicationsStore() {
 
         async addApplication(newApplication: NewApplication) {
             try {
-                await ApplicationService.addApplication(newApplication);
-                await this.getApplications();
+                const data = await ApplicationService.addApplication(newApplication);
+                return data;
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка создания";
@@ -63,6 +74,40 @@ function createApplicationsStore() {
                 const getError = error instanceof Error ? error.message : "Ошибка редактирования";
                 console.log(getError);
             }
+        },
+
+        async uploadFileApplication(file: File) {
+            try {
+                const data = await ApplicationService.uploadFiles(file);
+                return data;
+            }
+            catch (error) {
+                const getError = error instanceof Error ? error.message : "Ошибка при загрузке файлов";
+                console.log(getError);
+                return null;
+            }
+        },
+
+        async getFilesApplication(ids: number[]) {
+            try {
+                const data = await ApplicationService.getFiles(ids);
+                return data;
+            }
+            catch (error) {
+                const getError = error instanceof Error ? error.message : "Ошибка при загрузке файлов";
+                console.log(getError);
+                return null;
+            }
+        },
+
+        linkGeneration (a: ApplicationEntity) {
+            const link: string = `${a.id}b${a.building_id}e${a.email.split('@')[0].slice(1, 3)}p`;
+            return link;
+        },
+
+        linkDecrypting (l: string) {
+            const id: number = Number(l.split('b')[0]);
+            return id;
         }
     },
     {},
