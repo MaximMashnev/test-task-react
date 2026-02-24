@@ -13,14 +13,13 @@ function createBuildingsStore() {
         sort: {} as GridSortItem,
         filter: {} as GridFilterModel | null,
 
-        async getBuildings() {
+        async getBuildingsForTable() {
             try {
                 const data = await BuildingService.getBuildings();
                 runInAction(() => {
                     this.buildings = data.items;
                     this.meta = data.meta;
                 });
-                console.log('Данные:', data);
             } 
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка загрузки";
@@ -28,10 +27,23 @@ function createBuildingsStore() {
             }
         },
 
+        async getAllBuildings() {
+            try {
+                const data = await BuildingService.getAllBuildings();
+                runInAction(() => {
+                    this.buildings = data;
+                });
+            } 
+            catch (error) {
+                const getError = error instanceof Error ? error.message : "Ошибка получения объектов";
+                console.log(getError);
+            }
+        },
+
         async addBuilding(newObject: NewBuilding) {
             try {
                 await BuildingService.addBuilding(newObject);
-                await this.getBuildings();
+                await this.getBuildingsForTable();
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка добавления";
@@ -42,7 +54,7 @@ function createBuildingsStore() {
         async editBuilding(building: BuildingEntity) {
             try {
                 await BuildingService.editBuilding(building);
-                await this.getBuildings();
+                await this.getBuildingsForTable();
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка редактирования";
@@ -53,7 +65,7 @@ function createBuildingsStore() {
         async deleteBuilding(building: BuildingEntity) {
             try {
                 await BuildingService.deleteBuilding(building);
-                await this.getBuildings();
+                await this.getBuildingsForTable();
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка удаления";

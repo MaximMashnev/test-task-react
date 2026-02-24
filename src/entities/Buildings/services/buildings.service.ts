@@ -37,6 +37,11 @@ const BuildingService = {
         return data;
     },
 
+    async getAllBuildings () {
+        const { data } = await httpService.get<BuildingEntity[]>(BuildingEndpoind);
+        return data;
+    },
+
     async addBuilding (newBuilding: NewBuilding) {
         const building = this.setDate(newBuilding);
         const { data } = await httpService.post<NewBuilding>(BuildingEndpoind, building);
