@@ -16,7 +16,7 @@ import {
 import { useEffect, useState } from "react";
 import HomeIcon from '@mui/icons-material/Home';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { ApplicationCategory, ApplicationEntity, ApplicationStatus, LevelCriticality, NewApplication } from "../../../entities/Application/model/types";
+import { ApplicationCategory, ApplicationStatus, LevelCriticality, NewApplication } from "../../../entities/Application/model/types";
 import applicationsStore from "../../../entities/Application/model/store";
 import { LvlCriticality } from "../../../entities/Application/consts";
 import { MAX_FILES, MAX_SIZE_MB, PATHS } from "../../../shared/consts";
@@ -25,6 +25,7 @@ import { observer } from "mobx-react-lite";
 import { BuildingEntity } from "../../../entities/Buildings";
 import { FileDTO } from "../../../entities/Application/services/dto";
 import { useNavigate } from "react-router-dom";
+import { IncrementNumAppsBuilding } from "../../../entities/Buildings/model/types";
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -72,13 +73,18 @@ const CreateApplicationForm = observer(() => {
                 description: description,
                 email: email,
                 dateSubmission: priorityResult.createdAt,
-                status: "новый",
+                status: ApplicationStatus.new,
                 building_id: building!.id,
                 upload_id: filesData,
                 priority: priorityResult.priority,
             }
 
             const data = await applicationsStore.addApplication(newApplication);
+            const incrementNumApps: IncrementNumAppsBuilding = {
+                ...building!,
+                numberApplications: building!.numberApplications + 1
+            }
+            await buildingsStore.incrementNumApps(incrementNumApps);
             const link = applicationsStore.linkGeneration(data!);
             navigate(`../${PATHS.APPLICATION_TRACKING}/${link}`)
         }

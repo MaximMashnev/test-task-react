@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import { BuildingEntity, NewBuilding } from "./types";
+import { BuildingEntity, IncrementNumAppsBuilding, NewBuilding } from "./types";
 import BuildingService from "../services/buildings.service";
 import { Meta} from "../../../shared/api/services/types";
 import { GridSortItem } from "@mui/x-data-grid/models/gridSortModel";
@@ -55,6 +55,16 @@ function createBuildingsStore() {
             try {
                 await BuildingService.editBuilding(building);
                 await this.getBuildingsForTable();
+            }
+            catch (error) {
+                const getError = error instanceof Error ? error.message : "Ошибка редактирования";
+                console.log(getError);
+            }
+        },
+
+        async incrementNumApps (building: IncrementNumAppsBuilding) {
+            try {
+                await BuildingService.incrementNumApps(building);
             }
             catch (error) {
                 const getError = error instanceof Error ? error.message : "Ошибка редактирования";

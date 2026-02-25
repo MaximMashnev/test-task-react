@@ -1,6 +1,6 @@
 import { httpService } from "../../../shared/api/services/http.service"
 import config from "../../../shared/configs/config.json"
-import { BuildingEntity, NewBuilding } from "../model/types";
+import { BuildingEntity, IncrementNumAppsBuilding, NewBuilding } from "../model/types";
 import { BuildingsDTO } from "./dto";
 import buildingsStore from "../model/store";
 import dayjs from "dayjs";
@@ -51,6 +51,11 @@ const BuildingService = {
     async editBuilding (editBuilding: BuildingEntity) {
         const building = this.setDate(editBuilding);
         const { data } = await httpService.patch<BuildingEntity>(`${BuildingEndpoind}/${editBuilding.id}`, building);
+        return data;
+    },
+
+    async incrementNumApps(building: IncrementNumAppsBuilding) {
+        const { data } = await httpService.patch<BuildingEntity>(`${BuildingEndpoind}/${building.id}`, building);
         return data;
     },
 

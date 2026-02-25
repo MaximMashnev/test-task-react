@@ -7,3 +7,5 @@ export interface BuildingEntity {
 }
 
 export type NewBuilding = Omit<BuildingEntity, "id">;
+
+export type IncrementNumAppsBuilding = Readonly<Omit<BuildingEntity, "numberApplications">> & Pick<BuildingEntity, "numberApplications">; 
