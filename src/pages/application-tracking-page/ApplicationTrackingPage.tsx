@@ -8,6 +8,7 @@ import Image from "../../shared/assets/imgs/bgImage.jpg";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ApplicationEntity } from "../../entities/Application";
 import { FileDTO } from "../../entities/Application/services/dto";
+import { ApplicationStatus } from "../../entities/Application/model/types";
 
 export default function ApplicationsTrackingPage() {
 
@@ -29,7 +30,7 @@ export default function ApplicationsTrackingPage() {
         const app = await applicationsStore.getApplication(applicationId);
         if (app !== undefined && app !== null) {
             setApp(app);
-            setImgs(await applicationsStore.getFilesApplication(app.upload_id))
+            if (app.upload_id.length > 0) setImgs(await applicationsStore.getFilesApplication(app.upload_id))
         }
     }
 
@@ -80,10 +81,11 @@ export default function ApplicationsTrackingPage() {
                                 </Typography>
                             </AccordionSummary>
                             <AccordionDetails>
-                                {/* TODO исправить вывод даты */}
-                                {`Статус "новый": ${app.dateSubmission}`}
-                                {app.dateInProgress && <><br />{`Статус "в работе": ${app.dateInProgress}`}</>}
-                                {app.dateResult && <><br />{`Статус "выполнено/отклонено": ${app.dateResult}`}</>}
+                                {`Статус "${ApplicationStatus.new}": ${new Date(app.dateSubmission).toLocaleString()}`}
+                                {app.dateInProgress && 
+                                <><br />{`Статус "${ApplicationStatus.inProgress}": ${new Date(app.dateInProgress).toLocaleString()}`}</>}
+                                {app.dateResult 
+                                && <><br />{`Статус "${ApplicationStatus.completed}/${ApplicationStatus.rejected}": ${new Date(app.dateResult).toLocaleString()}`}</>}
                             </AccordionDetails>
                         </Accordion>
                         {
@@ -100,7 +102,10 @@ export default function ApplicationsTrackingPage() {
                                     {imgs ? 
                                     <>
                                         <ImageList sx={{ width: 500, maxHeight: 450 }} cols={3} rowHeight={164}>
-                                        {imgs.map((item) => (
+                                        {imgs.length == 0
+                                        ? "Файлы не найдены"
+                                        :
+                                        imgs.map((item) => (
                                             <ImageListItem key={item.id}>
                                             <img
                                                 srcSet={`${item.url}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}

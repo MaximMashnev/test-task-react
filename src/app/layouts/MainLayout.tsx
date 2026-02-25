@@ -27,7 +27,7 @@ export default function MainLayout() {
             {
               isAuth ? (
                 <>
-                  <Button color="inherit" endIcon={<AppsIcon />} href={PATHS.TOOLPAD}>
+                  <Button color="inherit" endIcon={<AppsIcon />} href={`../${PATHS.TOOLPAD}`}>
                     Панель инструментов
                   </Button >
                   <Button color="inherit" endIcon={<LogoutIcon />} onClick={handleLogout}>

@@ -1,6 +1,12 @@
 import { BuildingEntity } from "../../Buildings";
 
-export type ApplicationStatus = "новый" | "в работе" | "выполнено" | "отклонено";
+// export type ApplicationStatus = "новый" | "в работе" | "выполнено" | "отклонено";
+export enum ApplicationStatus {
+    new = "новый",
+    inProgress = "в работе" ,
+    completed = "выполнено",
+    rejected = "отклонено"
+}
 
 export type BuildingID = Pick<BuildingEntity, "id">
 
