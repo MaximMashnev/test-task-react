@@ -1,8 +1,12 @@
 import { 
   DataGrid, 
+  getGridDateOperators, 
+  getGridNumericOperators, 
+  getGridSingleSelectOperators, 
   GridActionsCell, 
   GridActionsCellItem, 
   GridColDef,
+  GridFilterInputDate,
   GridFilterInputValue, 
   GridFilterModel,
   GridPaginationModel, 
@@ -23,31 +27,25 @@ import RejectApplicationDialog from '../../features/EditApplication/ui/RejectApp
 import ConstructionIcon from '@mui/icons-material/Construction';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { ApplicationStatus } from '../../entities/Application/model/types';
+import buildingsStore from '../../entities/Buildings/model/store';
 
 interface SnackbarAlert {
   open: boolean;
   message: string;
 }
 
+interface mapBuildings {
+  label: string;
+  value: number;
+}
+
 const ApplicationPage = observer(() => {
-
-  // Фильтрация заявок ( по Статусу, Объекту, Периоду дат, Наличию прикрепленных файлов, приоритету)
-  const customFilter = [
-    {
-      label: 'Равно',
-      value: "=",
-      InputComponent: GridFilterInputValue,
-      getApplyFilterFn: () => {return null},
-    },
-    {
-      label: 'Содержит',
-      value: '=*',
-      InputComponent: GridFilterInputValue,
-      getApplyFilterFn: () => {return null},
-    },
-  ];
-
-  // Каждая заявка содержит: ID, Название заявки, Описание проблемы, Email заявителя, Дата подачи, Текущий статус (новый → в работе → выполнено/отклонено), Привязанный объект
+  const mapBuildings: mapBuildings[] = [];
+  buildingsStore.buildings.forEach(b => {
+    mapBuildings.push({label: b.name, value: b.id});
+  })
+  // Фильтрация заявок (Периоду дат (нет в моках и в grid), Наличию прикрепленных файлов (нет в моках))
   const columns: GridColDef<ApplicationEntity>[] = [
     { 
       field: 'id', 
@@ -81,19 +79,42 @@ const ApplicationPage = observer(() => {
       headerName: 'Дата подачи',
       flex: 1,
       type: "date",
-      valueGetter: (value) => {return new Date(value)}
+      valueFormatter: (value) => {return new Date(value).toLocaleString()},
+      filterOperators: getGridDateOperators().filter(
+        (operator) => operator.value === "is"
+      ),
     },
     {
       field: 'status',
       headerName: 'Статус',
-      type: 'string',
+      type: 'singleSelect',
       flex: 1,
+      filterOperators: getGridSingleSelectOperators()
+        .filter((operator) => operator.value === 'is')
+        .map((operator) => ({
+          ...operator,
+          label: 'Равен',
+        })),
+      valueOptions: [
+        ApplicationStatus.new,
+        ApplicationStatus.inProgress,
+        ApplicationStatus.completed,
+        ApplicationStatus.rejected,
+      ],
     },
     {
       field: 'building_id',
       headerName: 'Объект',
-      type: 'number',
+      type: 'singleSelect',
       flex: 1,
+      valueFormatter: (value) => {return buildingsStore.buildings.find(b => b.id === value)?.name},
+      filterOperators: getGridSingleSelectOperators()
+        .filter((operator) => operator.value === 'is')
+        .map((operator) => ({
+          ...operator,
+          label: 'Равен',
+        })),
+      valueOptions: mapBuildings,
     },
     {
       field: 'upload_id',
@@ -112,6 +133,12 @@ const ApplicationPage = observer(() => {
       headerName: 'Приоритет',
       type: 'number',
       flex: 1,
+      filterOperators: getGridNumericOperators()
+        .filter((operator) => operator.value === '=')
+        .map((operator) => ({
+          ...operator,
+          label: 'Равен',
+        })),
     },
     {
       field: 'actions',
@@ -180,13 +207,13 @@ const ApplicationPage = observer(() => {
     applicationsStore.pagination = paginationModel;
     applicationsStore.sort = sortModel;
     applicationsStore.getApplications();
+    buildingsStore.getAllBuildings();
   }, [paginationModel, sortModel, filterModel])
-
 
   const handleTakeOnJob = async (application: ApplicationEntity) => {
     const jobStatusApplication: ApplicationEntity = {
       ...application,
-      status: "в работе",
+      status: ApplicationStatus.inProgress,
       dateInProgress: new Date()
     }
     try {
@@ -202,7 +229,7 @@ const ApplicationPage = observer(() => {
   const handleSuccess = async (application: ApplicationEntity) => {
     const successStatusApplication: ApplicationEntity = {
       ...application,
-      status: "выполнено",
+      status: ApplicationStatus.completed,
       dateResult: new Date()
     }
     try {

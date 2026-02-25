@@ -10,6 +10,7 @@ import {
 import { FC, useState} from 'react';
 import { ApplicationEntity } from '../../../entities/Application';
 import applicationsStore from '../../../entities/Application/model/store';
+import { ApplicationStatus } from '../../../entities/Application/model/types';
 
 interface RejectApplicationDialogProps {
     open: boolean;
@@ -35,7 +36,7 @@ const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, 
     const rejectApplication = async () => {
         const application: ApplicationEntity = {
             ...data,
-            status: "отклонено",
+            status: ApplicationStatus.rejected,
             reason: reason,
             dateResult: new Date()
         }
