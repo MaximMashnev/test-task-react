@@ -29,6 +29,19 @@ function createApplicationsStore() {
             }
         },
 
+        async getAllApplications() {
+            try {
+                const data = await ApplicationService.getAllApplication();
+                runInAction(() => {
+                    this.applications = data;
+                });
+            } 
+            catch (error) {
+                const getError = error instanceof Error ? error.message : "Ошибка загрузки";
+                console.log(getError);
+            }
+        },
+
         async getApplication(id: number) {
             try {
                 const data = await ApplicationService.getApplication(id);

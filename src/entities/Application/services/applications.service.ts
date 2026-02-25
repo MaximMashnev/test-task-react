@@ -15,10 +15,19 @@ const ApplicationService = {
         const sortDir = applicationsStore.sort ? applicationsStore.sort.sort === "desc" ? "-" : "" : "";
         const filter = () => {
             const filterItems = applicationsStore.filter?.items[0];
-            if (filterItems?.field) {
+            if (filterItems?.field && filterItems?.value) {
                 const filterOperator = filterItems.operator === 'is' ? "=" : filterItems.operator;
-                const filterValue = typeof filterItems.value === "string" ? filterItems.value : dayjs(filterItems.value).toISOString()
-                return `${filterItems.field}${filterOperator}${filterValue}&`;
+                const filterValue = () => {
+                    switch(typeof filterItems.value) {
+                        case "string":
+                            return filterItems.value;
+                        case "number":
+                            return filterItems.value;
+                        default:
+                            return dayjs(filterItems.value).toISOString();
+                    }
+                }
+                return `${filterItems.field}${filterOperator}${filterValue()}&`;
             }
             return "";
         }
@@ -29,6 +38,11 @@ const ApplicationService = {
             `&limit=${applicationsStore.pagination.pageSize}`+
             `&sortBy=${sortDir}${sortField}`
             );
+        return data;
+    },
+
+    async getAllApplication () {
+        const { data } = await httpService.get<ApplicationEntity[]>(`${ApplicationsEndpoind}`);
         return data;
     },
 
