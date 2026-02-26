@@ -47,10 +47,13 @@ const CreateApplicationForm = observer(() => {
     const [building, setBuilding] = useState<BuildingEntity | undefined>();
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [email, setEmail] = useState("");
+    const [email, setEmail] = useState({value: "", touched: false});
     const [category, setCategory] = useState<ApplicationCategory | undefined>();
     const [levelCriticality, setLevelCriticality] = useState<LevelCriticality | undefined>();
     const [files, setFiles] = useState<FileList>();
+
+    const isEmailValid = email.value.split("@")[0].length > 4;
+    const showEmailError = !isEmailValid && email.touched;
 
     const handleSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
@@ -71,12 +74,13 @@ const CreateApplicationForm = observer(() => {
             const newApplication: NewApplication = {
                 name: name,
                 description: description,
-                email: email,
+                email: email.value,
                 dateSubmission: priorityResult.createdAt,
                 status: ApplicationStatus.new,
                 building_id: building!.id,
                 upload_id: filesData,
                 priority: priorityResult.priority,
+                category: category!.id,
             }
 
             const data = await applicationsStore.addApplication(newApplication);
@@ -131,9 +135,16 @@ const CreateApplicationForm = observer(() => {
     }
 
     useEffect(() => {
-        applicationsStore.getApplicationsCategories();
-        buildingsStore.getAllBuildings();
+        getData();
     }, [])
+
+    const getData = async () => {
+        await Promise.all([
+            applicationsStore.getApplicationsCategories(),
+            applicationsStore.getAllApplications(),
+            buildingsStore.getAllBuildings(),
+        ])
+    }
 
     const priorityСalculation = () => {
         let priority = levelCriticality!.score;
@@ -145,11 +156,21 @@ const CreateApplicationForm = observer(() => {
 
         if (files?.length) {
             priority += files.length >= 3 ? 2 : 1;
-            if (Array.from(files).some(f => f.type.startsWith('video/'))) priority += 1;
+            priority += Array.from(files).some(f => f.type.startsWith('video/')) ? 1 : 0;
         }
 
         const createdAt = new Date();
         priority += (createdAt.getHours() < 22 && createdAt.getHours() > 6) ? 0 : 2;
+
+        priority += applicationsStore.applications.some(a => 
+            a.building_id === building!.id && a.category === category!.id
+        ) ? 2 : 0;
+
+        priority += buildingsStore.buildings.some(b => 
+            b.numberApplications > building!.numberApplications
+        ) ? 0 : 1;
+
+        priority = Math.min(priority, 10);
 
         return {priority, createdAt};
     }
@@ -221,8 +242,10 @@ const CreateApplicationForm = observer(() => {
                         disabled={isLoading}
                     />         
                     <TextField
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        value={email.value}
+                        onChange={e => setEmail({value: e.target.value, touched: true})}
+                        error={showEmailError}
+                        helperText={showEmailError && "Минимальная длина имени почты (до @) 4 символа"}
                         label="Email для обратной связи"
                         placeholder="example@ex.com"
                         required

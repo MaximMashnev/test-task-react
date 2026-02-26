@@ -24,6 +24,7 @@ export interface ApplicationEntity {
     upload_id: number[];
     user_id?: number;
     reason?: string;
+    category: number;
 }
 
 export type NewApplication = Omit<ApplicationEntity, "id">
