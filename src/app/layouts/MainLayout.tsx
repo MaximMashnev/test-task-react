@@ -5,6 +5,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AppsIcon from '@mui/icons-material/Apps';
 import { PATHS, STORAGE_KEYS } from "../../shared/consts";
 import authStore from "../../features/auth/model/store";
+import { observer } from "mobx-react-lite";
 
 const MainPageBox = styled(Box)({
   display: 'flex', 
@@ -12,7 +13,7 @@ const MainPageBox = styled(Box)({
   height: '100vh'   
 })
 
-export default function MainLayout() {
+const MainLayout = observer(() => {
   return(
     <>
       <MainPageBox>
@@ -45,4 +46,6 @@ export default function MainLayout() {
       </MainPageBox>         
     </>
   )
-}
+})
+
+export default MainLayout;

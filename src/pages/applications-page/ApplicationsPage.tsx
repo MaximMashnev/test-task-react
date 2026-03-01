@@ -37,7 +37,7 @@ const CustomToolbar = () => {
   return (
     <GridToolbarContainer>
       <GridToolbarFilterButton />
-      <Button variant="text" startIcon={<RefreshIcon />} onClick={() => applicationsStore.getApplications()}>
+      <Button variant="text" startIcon={<RefreshIcon />} onClick={() => applicationsStore.getApplicationsForTable()}>
         Обновить
       </Button >
     </GridToolbarContainer>
@@ -55,14 +55,14 @@ const ApplicationPage = observer(() => {
   const [openDialog, setOpenDialog] = useState(false);
   const [applicationData, setApplicationData] = useState<ApplicationEntity | null>(null);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(applicationsStore.pagination);
-  const [sortModel, setSortModel] = useState<GridSortItem | null>(null);
-  const [filterModel, setFilterModel] = useState<GridFilterModel | null>(null);  
+  const [sortModel, setSortModel] = useState<GridSortItem | null>(applicationsStore.sort);
+  const [filterModel, setFilterModel] = useState<GridFilterModel | null>(applicationsStore.filter);  
 
   useEffect(() => {
-    getData();
     applicationsStore.setFilter(filterModel);
     applicationsStore.setPagination(paginationModel);
     applicationsStore.setSort(sortModel);
+    getData();
   }, [paginationModel, sortModel, filterModel])  
 
   const columns: GridColDef<ApplicationEntity>[] = [
