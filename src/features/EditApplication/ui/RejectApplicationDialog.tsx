@@ -5,7 +5,7 @@ import {
     DialogContent, 
     DialogActions, 
     Dialog,
-    Container
+    styled
 } from '@mui/material';
 import { FC, useState} from 'react';
 import { ApplicationEntity } from '../../../entities/Application';
@@ -15,25 +15,24 @@ import { ApplicationStatus } from '../../../entities/Application/model/types';
 interface RejectApplicationDialogProps {
     open: boolean;
     data: ApplicationEntity;
-    onClose: Function;
+    onClose: () => void;
 }
+
+const RejectForm = styled('form')({
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+    paddingTop: "6px"
+});
 
 const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, onClose}) => {
 
     const [reason, setReason] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.SubmitEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        rejectApplication();
-    }
-
-    const handleOnClose = () => {
-        onClose();
-    }
-
-    const rejectApplication = async () => {
         const application: ApplicationEntity = {
             ...data,
             status: ApplicationStatus.rejected,
@@ -49,20 +48,15 @@ const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, 
         }
         finally {
             setIsLoading(false);
-            handleOnClose();
+            onClose();
         }
     }
 
     return (
-      <Dialog open={open} onClose={handleOnClose} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
         <DialogTitle>{`Отклонение заявки "${data?.id}"`}</DialogTitle>
         <DialogContent>
-            <Container component="form" onSubmit={handleSubmit} id='BuildingForm' sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-                paddingTop: "6px"
-                }}>
+            <RejectForm id="RejectForm" onSubmit={handleSubmit}>
                 <TextField
                     value={reason}
                     onChange={e => setReason(e.target.value)}
@@ -73,11 +67,11 @@ const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, 
                     type="text"
                     disabled={isLoading}
                 /> 
-            </Container>
+            </RejectForm>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleOnClose} disabled={isLoading}>Отмена</Button>
-          <Button type="submit" form="BuildingForm" disabled={isLoading} loading={isLoading}>
+          <Button onClick={onClose} disabled={isLoading}>Отмена</Button>
+          <Button type="submit" form="RejectForm" disabled={isLoading} loading={isLoading}>
             Сохранить
           </Button>
         </DialogActions>

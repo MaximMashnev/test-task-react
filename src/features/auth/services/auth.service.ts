@@ -1,34 +1,15 @@
 import config from "../../../shared/configs/config.json";
-import { UserEntity } from "../../../entities/User";
 import { httpService } from "../../../shared/api/services/http.service";
+import { LoginDataDTO, LoginForm } from "../model/types";
+import { AuthUser } from "../../../entities/User/model/types";
 
 const authMe = config.api.endPoints.auth_me;
 const auth = config.api.endPoints.auth;
 
-interface loginData {
-    data: Omit<UserEntity, "password">;
-    token: string;
-}
-
-type LoginForm = Pick<UserEntity, "login" | "password">;
-type AuthMe = Omit<UserEntity, "password">;
-
 const authService = {
-    async login (
-        loginForm: LoginForm
-    ) {
-        const { data } = await httpService.post<loginData>(auth, loginForm);
-        return data;
-    },
+    login: async (loginForm: LoginForm) => (await httpService.post<LoginDataDTO>(auth, loginForm)).data,
 
-    async authMe () {
-        const { data } = await httpService.get<AuthMe>(authMe);
-        return data;
-    },
-
-    logout () {
-        localStorage.clear();
-    }
+    authMe: async () => (await httpService.get<AuthUser>(authMe)).data,
 }
 
 export default authService;

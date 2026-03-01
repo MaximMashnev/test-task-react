@@ -1,129 +1,92 @@
-import { Alert, Box, Button, TextField, Typography, IconButton } from "@mui/material";
+import { Alert, Button, TextField, Typography, IconButton} from "@mui/material";
 import Container from "../../../shared/ui/Container";
 import { useState } from "react";
-import bgImage from "../../../shared/assets/imgs/bgImage.jpg";
 import { useNavigate } from "react-router";
-import authService from "../services";
-import { PATHS, STORAGE_KEYS } from "../../../shared/consts";
+import { PATHS } from "../../../shared/consts";
 import HomeIcon from '@mui/icons-material/Home';
+import FormBox from "../../../shared/ui/Form/FormBox.styles";
+import FormHeader from "../../../shared/ui/Form/FormHeader.styles";
+import Form from "../../../shared/ui/Form/FormContainer.Styles";
+import authStore from "../model/store";
+import { AuthData } from "../model/types";
+import { observer } from "mobx-react-lite";
 
-export default function LoginForm () {
+const LoginForm = observer(() => {
 
     const navigate = useNavigate();
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [login, setLogin] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+    const [loginData, setLoginData] = useState<AuthData>(() => ({
+        login: authStore.user?.login ?? '',
+        password: ''
+    }));
     const [touched, setTouched] = useState({login: false, password: false})
 
-    const isLoginValid = login.length >= 4;
-    const isPasswordValid = password.length >= 8;
+    const isLoginValid = loginData.login.length >= 4;
+    const isPasswordValid = loginData.password.length >= 8;
 
     const showLoginError = touched.login && !isLoginValid;
     const showPasswordError = touched.password && !isPasswordValid;
 
-    const authUser = () => {
-        setIsLoading(true);
-        setError("");
-        authService.login({login, password})
-            .then(
-                (data) => {
-                    localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
-                    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.data));
-                    navigate(`../${PATHS.TOOLPAD}`);
-            })
-            .catch(
-                (error) => {
-                    const message = error.response.data.message ?? "Ошибка авторизации";
-                    setError(message);
-            })
-            .finally(
-                () => {
-                    setIsLoading(false);
-            })
+    const authUser = async () => {
+        if (!loginData) return;
+        const data = await authStore.login(loginData);
+        if (data) {
+            navigate(`../${PATHS.TOOLPAD}`);
+        }
     }   
 
-    const handleSubmit = (e: React.SubmitEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         authUser();
     }
 
     return (
-        <Box 
-            sx={{ 
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100vh",
-                position: "relative", 
-                '&::before': {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    backgroundImage: `url(${bgImage})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    filter: "blur(2px)",
-                    zIndex: -1,
-                }
-            }}>
+        <FormBox>
             <Container>
-                <Box sx={{display: "flex", justifyContent: "space-between"}}>
+                <FormHeader>
                     <Typography variant="h6" component="span">
                         Авторизация
                     </Typography>
-                    <IconButton href="/" title="На главную">
-                        <HomeIcon />
-                    </IconButton>
-                </Box>
-                {error && <Alert severity="error">{error}</Alert>}
-                <Box 
-                    onSubmit={handleSubmit}
-                    component="form" 
-                    sx={{
-                        display: "flex",
-                        width: "100%",
-                        flexDirection: "column",
-                        gap: "1rem"
-                    }}
-                >
+                        <IconButton onClick={() => navigate(PATHS.MAIN)} title="На главную">
+                            <HomeIcon />
+                        </IconButton>
+                </FormHeader>
+                {authStore.errorLogin && <Alert severity="error">{authStore.errorLogin}</Alert>}
+                <Form onSubmit={handleSubmit}>
                     <TextField
-                        value={login}
-                        onChange={e => setLogin(e.target.value)}
+                        value={loginData.login}
+                        onChange={e => setLoginData({...loginData, login: e.target.value})}
                         label="Логин"
                         placeholder="example@ex.com"
                         onBlur={() => {setTouched(prev => ({ ...prev, login: true}))}}
                         error={showLoginError}
                         helperText={showLoginError && "Минимальная длина 4 символа"}
                         type="email"
-                        disabled={isLoading}
+                        disabled={authStore.isLoadingLogin}
                     />
                     <TextField
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        value={loginData.password}
+                        onChange={e => setLoginData({...loginData, password: e.target.value})}
                         label="Пароль"
                         placeholder="Password"
                         onBlur={() => {setTouched(prev => ({ ...prev, password: true}))}}
                         error={showPasswordError}
                         helperText={showPasswordError && "Минимальная длина 8 символов"}
                         type="password"
-                        disabled={isLoading}
+                        disabled={authStore.isLoadingLogin}
                     />
                     <Button 
                         type="submit" 
                         variant="contained" 
-                        loading={isLoading}
-                        disabled={(isLoginValid && isPasswordValid) ? false : true}
+                        loading={authStore.isLoadingLogin}
+                        disabled={!isLoginValid || !isPasswordValid}
                     >
                         Войти
                     </Button>                    
-                </Box>    
+                </Form>    
             </Container>
-        </Box>
+        </FormBox>
     )
-}
+})
+
+export default LoginForm;

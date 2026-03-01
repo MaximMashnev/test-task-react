@@ -15,8 +15,8 @@ interface BarChartData {
 const DashboardPage = observer(() => {
     useEffect(() => {
         Promise.all([
-            buildingsStore.getAllBuildings(),
-            applicationsStore.getAllApplications()          
+            buildingsStore.getBuildings(),
+            applicationsStore.getApplications()          
         ]);
     }, [])
 
@@ -62,9 +62,9 @@ const DashboardPage = observer(() => {
             <PieChart
                 series={[
                     {
-                    data: statByStatus,
-                    highlightScope: { fade: 'global', highlight: 'item' },
-                    faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                        data: statByStatus,
+                        highlightScope: { fade: 'global', highlight: 'item' },
+                        faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
                     },
                 ]}
                 height={200}

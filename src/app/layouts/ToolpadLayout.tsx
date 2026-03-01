@@ -1,4 +1,4 @@
-import { Outlet} from "react-router-dom";
+import { Link, Outlet} from "react-router-dom";
 import * as React from 'react';
 import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles';
 import MuiDrawer from '@mui/material/Drawer';
@@ -16,17 +16,30 @@ import {
     IconButton,
     Box
 } from '@mui/material';
-
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import MenuIcon from '@mui/icons-material/Menu';
 import MailIcon from '@mui/icons-material/Mail';
 import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
-import authService from "../../features/auth/services";
 import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
 import { PATHS } from "../../shared/consts";
+import authStore from "../../features/auth/model/store";
+
+interface AppBarProps extends MuiAppBarProps {
+  open?: boolean;
+}
+
+interface ItemPanel {
+    label: string;
+    icon: React.ReactNode;
+    href: string;
+};
+
+interface secItemPanel extends ItemPanel {
+  action: () => void;
+}
 
 const drawerWidth = 240;
 
@@ -59,10 +72,6 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   // necessary for content to be below app bar
   ...theme.mixins.toolbar,
 }));
-
-interface AppBarProps extends MuiAppBarProps {
-  open?: boolean;
-}
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
@@ -112,16 +121,6 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 
-interface ItemPanel {
-    label: string;
-    icon: React.ReactNode;
-    href: string;
-};
-
-interface secItemPanel extends ItemPanel {
-  action: () => void;
-}
-
 const Menu: ItemPanel[] = [
     {
         label: "Объекты",
@@ -151,7 +150,7 @@ const secMenu: secItemPanel[] = [
         label: "Выйти",
         icon: <LogoutIcon/>,
         href: `../${PATHS.LOGIN}`,
-        action: () => authService.logout()
+        action: () => authStore.logout()
     }
 ];
 
@@ -195,24 +194,19 @@ export default function ToolpadLayout() {
         </DrawerHeader>
         <Divider />
         <List>
-          {Object.values(Menu).map((item, index) => (
-            <ListItem key={index} disablePadding sx={{ display: 'block' }}>
+          {Menu.map((item) => (
+            <ListItem key={item.label} disablePadding sx={{ display: 'block' }}>
               <ListItemButton 
+                component={Link}
+                to={item.href}
                 sx={[
-                  {
-                    minHeight: 48,
-                    px: 2.5
-                  },
+                  {minHeight: 48, px: 2.5},
                   open ? { justifyContent: 'initial' } : { justifyContent: 'center' },
                 ]}
-                href={item.href}
               >
                 <ListItemIcon
                   sx={[
-                    {
-                      minWidth: 0,
-                      justifyContent: 'center'
-                    },
+                    {minWidth: 0, justifyContent: 'center'},
                     open ? { mr: 3 } : { mr: 'auto' },
                   ]}
                 >
@@ -226,13 +220,14 @@ export default function ToolpadLayout() {
             </ListItem>
           ))}
           <Divider />
-          {Object.values(secMenu).map((item, index) => (
-            <ListItem key={index} disablePadding sx={{ display: 'block' }}>
+          {secMenu.map((item) => (
+            <ListItem key={item.label} disablePadding sx={{ display: 'block' }}>
               <ListItemButton 
                 sx={[{ minHeight: 48,px: 2.5 },
                   open ? { justifyContent: 'initial' } : { justifyContent: 'center' },
                 ]}
-                href={item.href}
+                component={Link}
+                to={item.href}
                 onClick={item.action}
               >
                 <ListItemIcon

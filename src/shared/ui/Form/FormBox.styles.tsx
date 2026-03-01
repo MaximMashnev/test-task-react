@@ -1,13 +1,12 @@
 import { Box, styled } from "@mui/material";
-import CreateApplicationForm from "../../features/CreateApplication/ui/CreateApplicationForm";
-import Image from "../../shared/assets/imgs/bgImage.jpg";
+import bgImage from "../../../shared/assets/imgs/bgImage.jpg";
 
-const CreatingPageBox = styled(Box)({
+const FormBox = styled(Box)({
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    height: "calc(100vh - 64px)",
+    height: "100vh",
     position: "relative", 
     '&::before': {
         content: '""',
@@ -16,7 +15,7 @@ const CreatingPageBox = styled(Box)({
         left: 0,
         width: "100%",
         height: "100%",
-        backgroundImage: `url(${Image})`,
+        backgroundImage: `url(${bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         filter: "blur(2px)",
@@ -24,10 +23,4 @@ const CreatingPageBox = styled(Box)({
     }    
 })
 
-export default function ApplicationCreatingPage() {
-    return (
-        <CreatingPageBox>
-            <CreateApplicationForm />
-        </CreatingPageBox>
-    )
-}
+export default FormBox;

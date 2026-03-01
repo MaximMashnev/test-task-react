@@ -1,6 +1,18 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import applicationsStore from "../../entities/Application/model/store";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Container, IconButton, ImageList, ImageListItem, Typography } from "@mui/material";
+import { 
+    Accordion,
+    AccordionDetails, 
+    AccordionSummary, 
+    Box, 
+    Button, 
+    Container, 
+    IconButton, 
+    ImageList, 
+    ImageListItem, 
+    styled, 
+    Typography 
+} from "@mui/material";
 import { PATHS } from "../../shared/consts";
 import HomeIcon from '@mui/icons-material/Home';
 import { useEffect, useState } from "react";
@@ -9,63 +21,94 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ApplicationEntity } from "../../entities/Application";
 import { FileDTO } from "../../entities/Application/services/dto";
 import { ApplicationStatus } from "../../entities/Application/model/types";
+import { linkDecrypting } from "../../entities/Application/lib/linkHelpers";
+import FormHeader from "../../shared/ui/Form/FormHeader.styles";
+
+const PageBox = styled(Box)({
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "calc(100vh - 64px)",
+    position: "relative", 
+    '&::before': {
+        content: '""',
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        backgroundImage: `url(${Image})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        filter: "blur(2px)",
+        zIndex: -1,
+    }
+})
+
+const TrackingContainer = styled(Container)({
+    boxSizing: "border-box",
+    width: 600, 
+    backgroundColor: "white", 
+    borderRadius: "16px", 
+    padding: "12px"
+})
+
+const ImageListBox = styled(ImageList)({
+    width: 500, 
+    maxHeight: 450 
+})
 
 export default function ApplicationsTrackingPage() {
 
     const navigate = useNavigate();
-    const params = useParams();
-    const applicationId = applicationsStore.linkDecrypting(params.id!);
-    const [app, setApp] = useState<ApplicationEntity | null | undefined>(null);
+    const params = useParams<{id: string}>();
+    const [app, setApp] = useState<ApplicationEntity | null>(null);
     const [imgs, setImgs] = useState<FileDTO[] | null>(null);
-
-    if (Number.isNaN(applicationId)) {
-        navigate(`../${PATHS.MAIN}`);
-    }
+    const [isLoading, setIsloading] = useState(false);
 
     useEffect(() => {
+        if (!params.id) {
+            navigate(PATHS.MAIN, {replace: true});
+        };
         getInfoApp();
-    }, [])
+    }, [params.id, navigate])
 
     const getInfoApp = async () => {
-        const app = await applicationsStore.getApplication(applicationId);
-        if (app !== undefined && app !== null) {
-            setApp(app);
-            if (app.upload_id.length > 0) setImgs(await applicationsStore.getFilesApplication(app.upload_id))
+        setIsloading(true);
+        if (!params.id) return null;
+        const applicationId = linkDecrypting(params.id);
+        if (!applicationId) return null;
+        try {
+           const app = await applicationsStore.getApplication(applicationId); 
+            if (app) {
+                setApp(app);
+                if (app.upload_id.length > 0) {
+                    const imgs = await applicationsStore.getFiles(app.upload_id);
+                    if (imgs) setImgs(imgs);
+                }
+            }
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "Ошибка загрузки заявки"
+            console.error(message);
+        }
+        finally {
+            setIsloading(false);
         }
     }
 
     return (
-        <Box 
-            sx={{ 
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "calc(100vh - 64px)",
-                position: "relative", 
-                '&::before': {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    backgroundImage: `url(${Image})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    filter: "blur(2px)",
-                    zIndex: -1,
-                }
-            }}>
-            <Container sx={{width: 600, bgcolor: "white", borderRadius: "16px", padding: "12px"}}>
-                <Box sx={{display: "flex", justifyContent: "space-between"}}>
+        <PageBox>
+            <TrackingContainer>
+                <FormHeader>
                     <Typography variant="h6" component="span">
-                        {app ? `Отслеживание заявки ${params.id!}` : "Заявка не найдена"}
+                        {app ? `Отслеживание заявки ${params.id}` : "Заявка не найдена"}
                     </Typography>
                     <IconButton href={PATHS.MAIN} title="На главную">
                         <HomeIcon />
                     </IconButton>
-                </Box>
+                </FormHeader>
                 {app ?
                     <>
                         <Typography variant="body1" component="span">
@@ -99,38 +142,38 @@ export default function ApplicationsTrackingPage() {
                                     </Typography>
                                 </AccordionSummary>
                                 <AccordionDetails>
-                                    {imgs ? 
-                                    <>
-                                        <ImageList sx={{ width: 500, maxHeight: 450 }} cols={3} rowHeight={164}>
-                                        {imgs.length == 0
-                                        ? "Файлы не найдены"
-                                        :
-                                        imgs.map((item) => (
-                                            <ImageListItem key={item.id}>
-                                            <img
-                                                srcSet={`${item.url}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                                                src={`${item.url}?w=164&h=164&fit=crop&auto=format`}
-                                                alt={item.fileName}
-                                                loading="lazy"
-                                            />
-                                            </ImageListItem>
-                                        ))}
-                                        </ImageList>                                    
-                                    </>
-                                    :
-                                    "Загрузка..."
+                                    {isLoading 
+                                        ? "Загрузка..."
+                                        : <ImageListBox cols={3} rowHeight={164}>
+                                            {
+                                                !imgs
+                                                ? "Файлы не найдены"
+                                                : imgs.map((item) => (
+                                                    <ImageListItem key={item.id}>
+                                                    <img
+                                                        srcSet={`${item.url}?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
+                                                        src={`${item.url}?w=164&h=164&fit=crop&auto=format`}
+                                                        alt={item.fileName}
+                                                        loading="lazy"
+                                                    />
+                                                    </ImageListItem>
+                                                ))
+                                            }
+                                        </ImageListBox>                                    
                                     }
-
                                 </AccordionDetails>
                             </Accordion>                   
                         }
                     </>
                     :
                     <Typography variant="body1" component="span">
-                        {app === null ? "Загрузка..." : <a href={`..${PATHS.MAIN}`}>{`Заявка ${params.id!} не найдена, попробуйте позже`}</a>}
+                        {isLoading
+                            ? "Загрузка..." 
+                            : <Button component={Link} to={PATHS.MAIN}>На главную</Button>
+                        }
                     </Typography>  
                 }
-            </Container>
-        </Box>
+            </TrackingContainer>
+        </PageBox>
     )
 }

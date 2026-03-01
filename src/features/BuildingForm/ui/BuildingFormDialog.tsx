@@ -5,9 +5,8 @@ import {
     DialogContent, 
     DialogActions, 
     Dialog,
-    Container
 } from '@mui/material';
-import { FC, useEffect, useState} from 'react';
+import React, { FC, useState} from 'react';
 import { BuildingEntity } from '../../../entities/Buildings';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -16,136 +15,96 @@ import dayjs from 'dayjs';
 import { NewBuilding } from '../../../entities/Buildings/model/types';
 import buildingsStore from '../../../entities/Buildings/model/store';
 import { DATE_FORMAT } from '../../../shared/consts';
+import Form from '../../../shared/ui/Form/FormContainer.Styles';
 
 interface BuildingFormDialogProps {
     open: boolean;
     data: BuildingEntity | null;
-    onClose: Function;
+    onClose: () => void;
+}
+
+interface FormData {
+    name: string;
+    address: string;
+    dateRegistration: Date;
 }
 
 const BuildingFormDialog: FC<BuildingFormDialogProps> = ({open, data, onClose}) => {
 
-    const [name, setName] = useState("");
-    const [address, setAddress] = useState("");
-    const [dateRegistration, setDateRegistration] = useState(new Date());
+    const [formData, setFormData] = useState<FormData>(() => ({
+        name: data?.name ?? '',
+        address: data?.address ?? '',
+        dateRegistration: data?.dateRegistration ?? new Date(),
+    }));
     const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        if (open && data) {
-            setName(data.name);
-            setAddress(data.address);
-            setDateRegistration(data.dateRegistration);
-        }
-        else {
-            setName("");
-            setAddress("");
-            setDateRegistration(new Date());
-        }
-    }, [open, data]);
-
-    const handleSubmit = (e: React.SubmitEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
-
-        if (!dateRegistration) {
+        
+        if (!formData.dateRegistration) {
             window.alert("Выберите дату регистрации.");
-            setIsLoading(false);
             return;
         }
 
-        if (data) {
-            editBuilding();
-        }
-        else {
-            addBuilding();
-        }
-    }
+        setIsLoading(true);
 
-    const handleOnClose = () => {
-        onClose();
-    }
-
-    const editBuilding = async () => {
-        const building: BuildingEntity = {
-            ...data!,
-            name: name,
-            address: address,
-            dateRegistration: dateRegistration
-        }
         try {
-            await buildingsStore.editBuilding(building);
-            window.alert("Информация об объекте была обновлена.")
+            if (data) {
+                const building: BuildingEntity = {...data, ...formData};
+                await buildingsStore.editBuilding(building);
+                window.alert("Информация об объекте была обновлена.")
+            }
+            else {
+                const building: NewBuilding = {...formData, numberApplications: 0}
+                await buildingsStore.addBuilding(building);
+                window.alert("Новый объект был добавлен.")
+            }
         }
         catch (error) {
-            window.alert("Ошибка при обновлении информации объекта.")
+            window.alert(`Ошибка при ${data ? "добавлении" : "обновлении"} информации объекта.`)
         }
         finally {
             setIsLoading(false);
-            handleOnClose();
-        }
-    }
-
-    const addBuilding = async () => {
-        const building: NewBuilding = {
-            name: name,
-            address: address,
-            dateRegistration: dateRegistration,
-            numberApplications: 0
-        }
-        try {
-            await buildingsStore.addBuilding(building);
-            window.alert("Новый объект был добавлен.")
-        }
-        catch (error) {
-            window.alert("Ошибка при добавлении объекта.")
-        }
-        finally {
-            setIsLoading(false);
-            handleOnClose();
+            onClose();
         }
     }
 
     return (
-      <Dialog open={open} onClose={handleOnClose}>
+      <Dialog open={open} onClose={onClose}>
         <DialogTitle>{data ? `Редактирование объекта "${data.name}"` : "Создание объекта"}</DialogTitle>
         <DialogContent>
-          <Container component="form" onSubmit={handleSubmit} id='BuildingForm' sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "1rem",
-            paddingTop: "6px"
-            }}>
-            <TextField
-              required
-              label="Название"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              type="text"
-              fullWidth
-              disabled={isLoading}
-            />
-            <TextField
-              required
-              label="Адрес"
-              value={address}
-              onChange={e => setAddress(e.target.value)}
-              type="text"
-              fullWidth
-              disabled={isLoading}
-            />
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                label="Дата регистрации"
-                value={dayjs(dateRegistration)}
-                onChange={newDate => setDateRegistration(dayjs(newDate).isValid() ? dayjs(newDate).toDate() : new Date())}
-                format={DATE_FORMAT}
-                disabled={isLoading}
+            <Form id="BuildingForm" onSubmit={handleSubmit}>
+                <TextField
+                    required
+                    label="Название"
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    type="text"
+                    fullWidth
+                    disabled={isLoading}
                 />
-            </LocalizationProvider>
-            </Container>
+                <TextField
+                    required
+                    label="Адрес"
+                    value={formData.address}
+                    onChange={e => setFormData({...formData, address: e.target.value})}
+                    type="text"
+                    fullWidth
+                    disabled={isLoading}
+                />
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                    label="Дата регистрации"
+                    value={dayjs(formData.dateRegistration)}
+                    onChange={newDate => setFormData({...formData, dateRegistration: dayjs(newDate).isValid() ? dayjs(newDate).toDate() : new Date()})}
+                    format={DATE_FORMAT}
+                    disabled={isLoading}
+                    />
+                </LocalizationProvider>
+            </Form>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleOnClose} disabled={isLoading}>Отмена</Button>
+          <Button onClick={onClose} disabled={isLoading}>Отмена</Button>
           <Button type="submit" form="BuildingForm" disabled={isLoading} loading={isLoading}>
             {data ? "Сохранить" : "Добавить"}
           </Button>

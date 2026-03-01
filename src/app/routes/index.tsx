@@ -21,7 +21,7 @@ export const router = createBrowserRouter([
         element: <MainLayout />,
         children: [
             {
-                path: PATHS.MAIN,
+                index: true,
                 element: <PageWrapper title="Главная страница" component={MainPage} />
             },
             {

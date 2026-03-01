@@ -1,6 +1,5 @@
 import { 
     Alert, 
-    Box, 
     Button, 
     Container, 
     FormControl, 
@@ -26,6 +25,24 @@ import { BuildingEntity } from "../../../entities/Buildings";
 import { FileDTO } from "../../../entities/Application/services/dto";
 import { useNavigate } from "react-router-dom";
 import { IncrementNumAppsBuilding } from "../../../entities/Buildings/model/types";
+import { linkGeneration } from "../../../entities/Application/lib/linkHelpers";
+import FormHeader from "../../../shared/ui/Form/FormHeader.styles";
+import Form from "../../../shared/ui/Form/FormContainer.Styles";
+
+interface EmailData {
+    value: string;
+    touched: boolean;
+}
+
+interface FormData {
+    building: BuildingEntity | undefined;
+    name: string;
+    description: string;
+    email: EmailData;
+    category: ApplicationCategory | undefined;
+    levelCriticality: LevelCriticality | undefined;
+    files: FileList | undefined;
+}
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -39,29 +56,105 @@ const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
+const PageContainer = styled(Container)(({ theme }) => ({
+    width: 600,
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: "16px",
+    padding: "12px"
+}));
+
+const CustomFormControl = styled(FormControl)({
+    margin: 0
+});
+
 const CreateApplicationForm = observer(() => {
 
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
-    const [building, setBuilding] = useState<BuildingEntity | undefined>();
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
-    const [email, setEmail] = useState({value: "", touched: false});
-    const [category, setCategory] = useState<ApplicationCategory | undefined>();
-    const [levelCriticality, setLevelCriticality] = useState<LevelCriticality | undefined>();
-    const [files, setFiles] = useState<FileList>();
+    const [formData, setFormData] = useState<FormData>(() => ({
+        building: undefined,
+        name: "",
+        description: "",
+        email: {value: "", touched: false},
+        category: undefined,
+        levelCriticality: undefined,
+        files: undefined
+    }));
 
-    const isEmailValid = email.value.split("@")[0].length > 4;
-    const showEmailError = !isEmailValid && email.touched;
+    const isEmailValid = formData.email.value.split("@")[0].length > 4;
+    const showEmailError = !isEmailValid && formData.email.touched;
 
-    const handleSubmit = async (e: React.SubmitEvent) => {
+    useEffect(() => {
+        getData();
+    }, [])
+
+    const getData = async () => {
+        await Promise.all([
+            applicationsStore.getApplicationsCategories(),
+            applicationsStore.getApplications(),
+            buildingsStore.getBuildings(),
+        ])
+    }    
+
+    const priorityСalculation = () => {
+        let priority = formData.levelCriticality?.score ?? 0;
+        priority += formData.category?.score ?? 0;
+
+        if (formData.description.length >= 50) {
+            priority += formData.description.length >= 200 ? 2 : 1;
+        }
+
+        if (formData.files?.length) {
+            priority += formData.files.length >= 3 ? 2 : 1;
+            priority += Array.from(formData.files).some(f => f.type.startsWith('video/')) ? 1 : 0;
+        }
+
+        const createdAt = new Date();
+        priority += (createdAt.getHours() < 22 && createdAt.getHours() > 6) ? 0 : 2;
+
+        priority += applicationsStore.applications.some(a => 
+            a.building_id === formData.building?.id && a.category === formData.category?.id
+        ) ? 2 : 0;
+
+        priority += buildingsStore.buildings.some(b => 
+            formData.building && b.numberApplications > formData.building.numberApplications
+        ) ? 0 : 1;
+
+        priority = Math.min(priority, 10);
+
+        return {priority, createdAt};
+    }
+
+    const uploadedFiles = async (files: FileList) => {
+        const uploadedFiles = await Promise.all(
+            Array.from(files).map(async (value) => {
+                try {
+                    const fileData = await applicationsStore.uploadFile(value);
+                    return fileData;
+                }
+                catch (error) {
+                    console.log(error instanceof Error ? error.message : `Ошибка загрузки файла ${value.name}`);
+                    return null;
+                }
+            }
+        ));
+        return uploadedFiles.filter((dto): dto is FileDTO => dto !== undefined && dto !== null).map(dto => dto.id);
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.building || !formData.category || !formData.levelCriticality) {
+            setError("Заполните все обязательные поля.");
+            return;
+        }
+
         setIsLoading(true);
         try {
             let filesData: number[] = [];
-            if (files &&  files.length > 0) {
-                filesData = await uploadedFiles();
+            if (formData.files && formData.files.length > 0) {
+                filesData = await uploadedFiles(formData.files);
                 if (filesData.length === 0) {
                     setIsLoading(false);
                     setError("Не удалось загрузить файлы, попробуйте ещё раз.")
@@ -72,25 +165,30 @@ const CreateApplicationForm = observer(() => {
             const priorityResult = priorityСalculation();
 
             const newApplication: NewApplication = {
-                name: name,
-                description: description,
-                email: email.value,
+                ...formData,
+                email: formData.email.value,
                 dateSubmission: priorityResult.createdAt,
                 status: ApplicationStatus.new,
-                building_id: building!.id,
+                building_id: formData.building.id,
                 upload_id: filesData,
                 priority: priorityResult.priority,
-                category: category!.id,
+                category: formData.category.id
             }
 
+
             const data = await applicationsStore.addApplication(newApplication);
-            const incrementNumApps: IncrementNumAppsBuilding = {
-                ...building!,
-                numberApplications: building!.numberApplications + 1
+            if (data) {
+                const incrementNumApps: IncrementNumAppsBuilding = {
+                    ...formData.building,
+                    numberApplications: formData.building.numberApplications + 1
+                }                
+                await buildingsStore.incrementNumApps(incrementNumApps);
+                const link = linkGeneration(data);
+                navigate(`../${PATHS.APPLICATION_TRACKING}/${link}`)                
             }
-            await buildingsStore.incrementNumApps(incrementNumApps);
-            const link = applicationsStore.linkGeneration(data!);
-            navigate(`../${PATHS.APPLICATION_TRACKING}/${link}`)
+            else {
+                throw new Error("Ошибка при привязки заявки к объекту");
+            }
         }
         catch (error) {
             setError(error instanceof Error ? error.message : "Ошибка при создании заявки")
@@ -98,23 +196,6 @@ const CreateApplicationForm = observer(() => {
         finally{
             setIsLoading(false);
         }
-
-    }
-
-    const uploadedFiles = async () => {
-        const uploadedFiles = await Promise.all(
-            Array.from(files!).map(async (value) => {
-                try {
-                    const fileData = await applicationsStore.uploadFileApplication(value);
-                    return fileData;
-                }
-                catch (error) {
-                    console.log(error instanceof Error ? error.message : `Ошибка загрузки файла ${value.name}`);
-                    return null;
-                }
-            }
-        ));
-        return uploadedFiles.filter((dto): dto is FileDTO => dto !== undefined && dto !== null).map(dto => dto.id);
     }
 
     const handleFileInput = (files: FileList | null) => {
@@ -130,79 +211,34 @@ const CreateApplicationForm = observer(() => {
             return;
         }
 
-        setFiles(files);
+        setFormData({...formData, files: files});
         setError("");
-    }
-
-    useEffect(() => {
-        getData();
-    }, [])
-
-    const getData = async () => {
-        await Promise.all([
-            applicationsStore.getApplicationsCategories(),
-            applicationsStore.getAllApplications(),
-            buildingsStore.getAllBuildings(),
-        ])
-    }
-
-    const priorityСalculation = () => {
-        let priority = levelCriticality!.score;
-        priority += category!.score;
-
-        if (description.length >= 50) {
-            priority += description.length >= 200 ? 2 : 1;
-        }
-
-        if (files?.length) {
-            priority += files.length >= 3 ? 2 : 1;
-            priority += Array.from(files).some(f => f.type.startsWith('video/')) ? 1 : 0;
-        }
-
-        const createdAt = new Date();
-        priority += (createdAt.getHours() < 22 && createdAt.getHours() > 6) ? 0 : 2;
-
-        priority += applicationsStore.applications.some(a => 
-            a.building_id === building!.id && a.category === category!.id
-        ) ? 2 : 0;
-
-        priority += buildingsStore.buildings.some(b => 
-            b.numberApplications > building!.numberApplications
-        ) ? 0 : 1;
-
-        priority = Math.min(priority, 10);
-
-        return {priority, createdAt};
     }
 
     return (
         <>
-            <Container sx={{width: 600, bgcolor: "white", borderRadius: "16px", padding: "12px"}}>
-                <Box sx={{display: "flex", justifyContent: "space-between"}}>
+            <PageContainer>
+                <FormHeader>
                     <Typography variant="h6" component="span">
                         Создание заявки
                     </Typography>
                     <IconButton href={PATHS.MAIN} title="На главную">
                         <HomeIcon />
                     </IconButton>
-                </Box>
+                </FormHeader>
                 {error && <Alert severity="error" sx={{marginBottom:"16px"}}>{error}</Alert>}
-                <Box 
+                <Form 
                     onSubmit={handleSubmit}
-                    component="form" 
-                    sx={{
-                        display: "flex",
-                        width: "100%",
-                        flexDirection: "column",
-                        gap: "1rem"
-                    }}
                 >
-                    <FormControl sx={{ m: 0}}>
+                    <CustomFormControl>
                         <InputLabel>Строительный объект</InputLabel>
                         <Select
                             required
-                            value={building?.name}
-                            onChange={e => setBuilding(buildingsStore.buildings.find(b => b.id === e.target.value as unknown as number))}
+                            value={formData.building?.name}
+                            onChange={e => setFormData({
+                                ...formData, 
+                                building: buildingsStore.buildings.find(b => b.id === Number(e.target.value))
+                            })}
                             input={<OutlinedInput label="Строительный объект" />}
                             >
                             {buildingsStore.buildings ?
@@ -222,18 +258,18 @@ const CreateApplicationForm = observer(() => {
                                 </MenuItem>
                             }
                         </Select>
-                    </FormControl>
+                    </CustomFormControl>
                     <TextField
-                        value={name}
-                        onChange={e => setName(e.target.value)}
+                        value={formData.name}
+                        onChange={e => setFormData({...formData, name: e.target.value})}
                         label="Название проблемы"
                         required
                         type="text"
                         disabled={isLoading}
                     />       
                     <TextField
-                        value={description}
-                        onChange={e => setDescription(e.target.value)}
+                        value={formData.description}
+                        onChange={e => setFormData({...formData, description: e.target.value})}
                         label="Подробное описание проблемы"
                         multiline
                         maxRows={4}
@@ -242,8 +278,11 @@ const CreateApplicationForm = observer(() => {
                         disabled={isLoading}
                     />         
                     <TextField
-                        value={email.value}
-                        onChange={e => setEmail({value: e.target.value, touched: true})}
+                        value={formData.email.value}
+                        onChange={e => setFormData({
+                            ...formData, 
+                            email: {value: e.target.value, touched: true}
+                        })}
                         error={showEmailError}
                         helperText={showEmailError && "Минимальная длина имени почты (до @) 4 символа"}
                         label="Email для обратной связи"
@@ -252,12 +291,15 @@ const CreateApplicationForm = observer(() => {
                         type="email"
                         disabled={isLoading}
                     />
-                    <FormControl sx={{ m: 0}}>
+                    <CustomFormControl>
                         <InputLabel>Категория проблемы</InputLabel>
                         <Select
                             required
-                            value={category}
-                            onChange={e => setCategory(applicationsStore.categories.find(c => c.id === e.target.value as unknown as number))}
+                            value={formData.category}
+                            onChange={e => setFormData({
+                                ...formData, 
+                                category: applicationsStore.categories.find(c => c.id === Number(e.target.value))
+                            })}
                             input={<OutlinedInput label="Категория проблемы" />}
                             >
                             {applicationsStore.categories ?
@@ -278,25 +320,28 @@ const CreateApplicationForm = observer(() => {
                             }
 
                         </Select>
-                    </FormControl>
-                    <FormControl sx={{ m: 0}}>
+                    </CustomFormControl>
+                    <CustomFormControl>
                         <InputLabel>Уровень критичности</InputLabel>
                         <Select
                             required
-                            value={levelCriticality?.level}
-                            onChange={e => setLevelCriticality(LvlCriticality.find((item) => item.level === e.target.value))}
+                            value={formData.levelCriticality?.level}
+                            onChange={e => setFormData({
+                                ...formData, 
+                                levelCriticality: LvlCriticality.find((item) => item.level === e.target.value)
+                            })}
                             input={<OutlinedInput label="Уровень критичности" />}
                             >
-                                {LvlCriticality.map((level, index) => (
+                                {LvlCriticality.map((level) => (
                                     <MenuItem
-                                        key={index}
+                                        key={level.level}
                                         value={level.level}
                                     >
                                         {level.level}
                                     </MenuItem>
                                 ))}
                         </Select>
-                    </FormControl>
+                    </CustomFormControl>
                     <Button
                         component="label"
                         role={undefined}
@@ -320,8 +365,8 @@ const CreateApplicationForm = observer(() => {
                     >
                         Отправить заявку
                     </Button>                    
-                </Box>    
-            </Container>    
+                </Form>    
+            </PageContainer>    
         </>    
     )
 }) 

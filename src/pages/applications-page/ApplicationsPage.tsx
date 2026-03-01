@@ -6,8 +6,6 @@ import {
   GridActionsCell, 
   GridActionsCellItem, 
   GridColDef,
-  GridFilterInputDate,
-  GridFilterInputValue, 
   GridFilterModel,
   GridPaginationModel, 
   GridRenderCellParams, 
@@ -18,7 +16,7 @@ import {
 import Paper from '@mui/material/Paper';
 import { useEffect, useState } from 'react';
 import { observer } from "mobx-react-lite"
-import { Button, Snackbar} from '@mui/material';
+import { Button, Snackbar, styled} from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { GridSortItem } from '@mui/x-data-grid/models/gridSortModel';
 import { ApplicationEntity } from '../../entities/Application';
@@ -35,17 +33,38 @@ interface SnackbarAlert {
   message: string;
 }
 
-interface mapBuildings {
-  label: string;
-  value: number;
+const CustomToolbar = () => {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarFilterButton />
+      <Button variant="text" startIcon={<RefreshIcon />} onClick={() => applicationsStore.getApplications()}>
+        Обновить
+      </Button >
+    </GridToolbarContainer>
+  );
 }
 
+const PaperGrid = styled(Paper)({
+  height: "auto",
+  width: '100%' 
+})
+
 const ApplicationPage = observer(() => {
-  const mapBuildings: mapBuildings[] = [];
-  buildingsStore.buildings.forEach(b => {
-    mapBuildings.push({label: b.name, value: b.id});
-  })
-  // Фильтрация заявок (Периоду дат (нет в моках и в grid), Наличию прикрепленных файлов (нет в моках))
+
+  const [snackbarAlert, setSnackbarAlert] = useState<SnackbarAlert>({open: false, message: ""});
+  const [openDialog, setOpenDialog] = useState(false);
+  const [applicationData, setApplicationData] = useState<ApplicationEntity | null>(null);
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>(applicationsStore.pagination);
+  const [sortModel, setSortModel] = useState<GridSortItem | null>(null);
+  const [filterModel, setFilterModel] = useState<GridFilterModel | null>(null);  
+
+  useEffect(() => {
+    getData();
+    applicationsStore.setFilter(filterModel);
+    applicationsStore.setPagination(paginationModel);
+    applicationsStore.setSort(sortModel);
+  }, [paginationModel, sortModel, filterModel])  
+
   const columns: GridColDef<ApplicationEntity>[] = [
     { 
       field: 'id', 
@@ -107,26 +126,21 @@ const ApplicationPage = observer(() => {
       headerName: 'Объект',
       type: 'singleSelect',
       flex: 1,
-      valueFormatter: (value) => {return buildingsStore.buildings.find(b => b.id === value)?.name},
+      valueFormatter: (value) => buildingsStore.buildings.find(b => b.id === value)?.name,
       filterOperators: getGridSingleSelectOperators()
         .filter((operator) => operator.value === 'is')
         .map((operator) => ({
           ...operator,
           label: 'Равен',
         })),
-      valueOptions: mapBuildings,
+      valueOptions: () => buildingsStore.buildings.map(b => ({label: b.name, value: b.id}))
     },
     {
       field: 'upload_id',
       headerName: 'Есть прикрепленные файлы',
       type: 'boolean',
       flex: 1,
-      valueGetter: (value: Array<number>) => {
-        if (value?.length >= 1) {
-          return true;
-        }
-        return false
-      }
+      valueGetter: (value: Array<number>) => value?.length >= 1,
     },
     {
       field: 'priority',
@@ -153,7 +167,7 @@ const ApplicationPage = observer(() => {
   const ActionsCell = (props: GridRenderCellParams<ApplicationEntity>) => {
     return (
       <GridActionsCell {...props}>
-        {props.row.status === "новый" &&
+        {props.row.status === ApplicationStatus.new &&
           <GridActionsCellItem
             icon={<ConstructionIcon />}
             label="Принять в работу"
@@ -162,13 +176,13 @@ const ApplicationPage = observer(() => {
             color="inherit"
           />
         }
-        {props.row.status === "в работе" &&
+        {props.row.status === ApplicationStatus.inProgress &&
           <>
             <GridActionsCellItem
               icon={<CheckCircleIcon />}
               label="Отметить как выполненную"
               title="Отметить как выполненную"
-              onClick={() => handleSuccess(props.row)}
+              onClick={() => handleCompleted(props.row)}
               color="inherit"
             />
             <GridActionsCellItem
@@ -184,31 +198,12 @@ const ApplicationPage = observer(() => {
     );
   };
 
-  function CustomToolbar() {
-    return (
-      <GridToolbarContainer>
-        <GridToolbarFilterButton />
-        <Button variant="text" startIcon={<RefreshIcon />} onClick={() => applicationsStore.getApplications()}>
-          Обновить
-        </Button >
-      </GridToolbarContainer>
-    );
+  const getData = async () => {
+    await Promise.all([
+      applicationsStore.getApplicationsForTable(),
+      buildingsStore.getBuildings(),
+    ])
   }
-
-  const [snackbarAlert, setSnackbarAlert] = useState<SnackbarAlert>({open: false, message: ""});
-  const [openDialog, setOpenDialog] = useState(false);
-  const [applicationData, setApplicationData] = useState<ApplicationEntity>(applicationsStore.applications[0]);
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({page: 0, pageSize: 5});
-  const [sortModel, setSortModel] = useState<GridSortItem>({field: "id", sort: "asc"});
-  const [filterModel, setFilterModel] = useState<GridFilterModel | null>(null);
-
-  useEffect(() => {
-    applicationsStore.filter = filterModel;
-    applicationsStore.pagination = paginationModel;
-    applicationsStore.sort = sortModel;
-    applicationsStore.getApplications();
-    buildingsStore.getAllBuildings();
-  }, [paginationModel, sortModel, filterModel])
 
   const handleTakeOnJob = async (application: ApplicationEntity) => {
     const jobStatusApplication: ApplicationEntity = {
@@ -226,15 +221,15 @@ const ApplicationPage = observer(() => {
     }
   }
 
-  const handleSuccess = async (application: ApplicationEntity) => {
-    const successStatusApplication: ApplicationEntity = {
+  const handleCompleted = async (application: ApplicationEntity) => {
+    const completedStatusApplication: ApplicationEntity = {
       ...application,
       status: ApplicationStatus.completed,
       dateResult: new Date()
     }
     try {
-      await applicationsStore.editApplication(successStatusApplication);
-      setSnackbarAlert({open: true, message: `Статус заявки ${successStatusApplication.id} успешно изменен!`})
+      await applicationsStore.editApplication(completedStatusApplication);
+      setSnackbarAlert({open: true, message: `Статус заявки ${completedStatusApplication.id} успешно изменен!`})
     }
     catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ошибка при смене статуса заявки"
@@ -249,7 +244,7 @@ const ApplicationPage = observer(() => {
 
   return (
     <>
-      <Paper sx={{ height: "auto", width: '100%' }}>
+      <PaperGrid>
         <DataGrid
             rows={applicationsStore.applications}
             columns={columns}
@@ -257,7 +252,7 @@ const ApplicationPage = observer(() => {
             pageSizeOptions={[5, 10]}
             paginationMode='server'
             onPaginationModelChange={(model: GridPaginationModel) => setPaginationModel(model)}
-            rowCount={applicationsStore.meta.total_items ?? 0}
+            rowCount={applicationsStore.meta?.total_items ?? 0}
             sortingMode="server"
             onSortModelChange={([model]: GridSortModel) => setSortModel(model)}
             filterMode='server'
@@ -266,8 +261,10 @@ const ApplicationPage = observer(() => {
             showToolbar
             slots={{toolbar: CustomToolbar}}
         />      
-      </Paper>
-      <RejectApplicationDialog open={openDialog} data={applicationData!} onClose={() => setOpenDialog(false)}/>   
+      </PaperGrid>
+      {applicationData && (
+        <RejectApplicationDialog open={openDialog} data={applicationData} onClose={() => setOpenDialog(false)}/>
+      )}
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "center"}}
         autoHideDuration={4000}

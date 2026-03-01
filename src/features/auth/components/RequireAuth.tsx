@@ -1,19 +1,21 @@
 import { FC, useEffect} from "react";
-import { STORAGE_KEYS } from "../../../shared/consts";
+import { PATHS, STORAGE_KEYS } from "../../../shared/consts";
 import { useNavigate } from "react-router-dom";
+import authStore from "../model/store";
+import { observer } from "mobx-react-lite";
 
 interface RequireAuthProps {
     component: React.ComponentType;
 }
 
-export const RequireAuth: FC<RequireAuthProps> = ({component: Component}) => {
+export const RequireAuth: FC<RequireAuthProps> = observer(({component: Component}) => {
 
     const navigate = useNavigate();
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const token = authStore.token;
 
     useEffect(() => {
         if (!token) {
-            navigate("login");
+            navigate(PATHS.LOGIN);
         }
     }, [token, navigate])
 
@@ -21,5 +23,5 @@ export const RequireAuth: FC<RequireAuthProps> = ({component: Component}) => {
         return null;
     }
 
-    return (<Component />);
-}
+    return <Component />;
+})
