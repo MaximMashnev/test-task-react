@@ -50,7 +50,7 @@ class ApplicationsStore {
             const data = await ApplicationService.getApplicationsForTable({
                 sort: this.sort || undefined,
                 filter: this.filter || undefined,
-                pagination: this.pagination || undefined,
+                pagination: this.pagination || {page: 0, pageSize: 5},
             });
             runInAction(() => {
                 this.applications = data.items;
@@ -151,7 +151,7 @@ class ApplicationsStore {
         this.errorEdit = null;
         try {
             await ApplicationService.editApplication(application);
-            await this.getApplications();
+            await this.getApplicationsForTable();
         }
         catch (error) {
             runInAction(() => {

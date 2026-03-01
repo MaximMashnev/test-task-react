@@ -26,7 +26,7 @@ const BuildingService = {
         const params = new URLSearchParams();
         const filterItems = filter?.items[0];
         if (filterItems?.field && filterItems?.value) {
-            const filterOperator = filterItems.operator === "is" ? "=" : filterItems.operator;
+            const filterOperator = filterItems.operator === "is" ? "" : filterItems.operator;
             const filterValue = typeof filterItems.value === "object"
                 ? dayjs(filterItems.value).toISOString()
                 : String(filterItems.value);
