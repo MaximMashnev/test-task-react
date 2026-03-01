@@ -7,10 +7,11 @@ import {
     Dialog,
     styled
 } from '@mui/material';
-import { FC, useState} from 'react';
+import { FC, useEffect, useState} from 'react';
 import { ApplicationEntity } from '../../../entities/Application';
 import applicationsStore from '../../../entities/Application/model/store';
 import { ApplicationStatus } from '../../../entities/Application/model/types';
+import { observer } from 'mobx-react-lite';
 
 interface RejectApplicationDialogProps {
     open: boolean;
@@ -25,10 +26,15 @@ const RejectForm = styled('form')({
     paddingTop: "6px"
 });
 
-const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, onClose}) => {
+const RejectApplicationDialog: FC<RejectApplicationDialogProps> = observer(({open, data, onClose}) => {
 
     const [reason, setReason] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!open) return;
+        setReason("");
+    }, [open, data])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,17 +45,17 @@ const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, 
             reason: reason,
             dateResult: new Date()
         }
-        try {
-            await applicationsStore.editApplication(application);
-            window.alert("Статус заявки обновлен.")
+
+        await applicationsStore.editApplication(application);
+        if (applicationsStore.errorEdit) {
+            window.alert(applicationsStore.errorEdit);
         }
-        catch (error) {
-            window.alert("Ошибка при обновлении статуса заявки.")
-        }
-        finally {
-            setIsLoading(false);
+        else {
+            window.alert("Статус заявки обновлен.");
             onClose();
         }
+
+        setIsLoading(false);
     }
 
     return (
@@ -77,6 +83,6 @@ const RejectApplicationDialog: FC<RejectApplicationDialogProps> = ({open, data, 
         </DialogActions>
       </Dialog>
     )
-}
+})
 
 export default RejectApplicationDialog;
